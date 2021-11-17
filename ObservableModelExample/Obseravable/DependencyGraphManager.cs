@@ -8,13 +8,14 @@ namespace ObservableModelExample.Obseravable
 {
     public class DependencyGraphManager
     {
+        private const string THIS_VM = "this";
         private delegate Task NotifyDependencyNodeDelegateAsync();
         private Dictionary<string, NotifyDependencyNodeDelegateAsync> notifyDependencyNodeDelegates;
-        private ObservableModel thisVM;
+        private Dictionary<string, ObservableModel> vms;
 
         public DependencyGraphManager(ObservableModel vm)
         {
-            this.thisVM = vm;
+            this.vms = new Dictionary<string, ObservableModel>();
             this.DependencyGraph = new List<KeyValuePair<string, string>>();
             this.notifyDependencyNodeDelegates = new Dictionary<string, NotifyDependencyNodeDelegateAsync>();
             this.RegisterViewModel(vm);
@@ -22,18 +23,30 @@ namespace ObservableModelExample.Obseravable
 
         public void RegisterViewModel(ObservableModel vm)
         {
+            this.vms[THIS_VM] = vm;
             var properties = vm.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             foreach(var property in properties)
             {
                 var dependencies = property.GetCustomAttributes(typeof(DependsOnAttribute), false);
                 if (dependencies.Length > 0)
                 {
-                    var from = this.CreateDependencyNodeName(property.Name);
-                    this.notifyDependencyNodeDelegates.Add(from, () => Task.Run(() => vm.OnPropertyChange(property.Name)));
+                    var from = this.CreateDependencyNodeName(THIS_VM, property.Name);
+                    if (!this.notifyDependencyNodeDelegates.ContainsKey(from))
+                    {
+                        this.notifyDependencyNodeDelegates.Add(from, () => Task.Run(() => vm.OnPropertyChange(property.Name)));
+                    }
                     foreach (var dependency in dependencies)
                     {
-                        var to = this.CreateDependencyNodeName((dependency as DependsOnAttribute).Properties);
+                        var dependencyPaths = (dependency as DependsOnAttribute).Properties;
+                        var to = this.CreateDependencyNodeName(THIS_VM, dependencyPaths);
                         this.DependencyGraph.Add(KeyValuePair.Create(from, to));
+
+                        // if 'to' is thisVM's property, add notifyDependencyNodeDelegates.
+                        if (dependencyPaths.Count() == 1 && !this.notifyDependencyNodeDelegates.ContainsKey(to))
+                        {
+                            this.notifyDependencyNodeDelegates.Add(to, () => Task.Run(() => vm.OnPropertyChange(dependencyPaths[0])));
+                        }
+
                     }
                 }
             }
@@ -43,11 +56,11 @@ namespace ObservableModelExample.Obseravable
         {
             try
             {
-                node = this.CreateDependencyNodeName(node);
+                node = this.CreateDependencyNodeName(THIS_VM, node);
                 IEnumerable<KeyValuePair<string, string>> subGraph = new List<KeyValuePair<string, string>>();
                 this.CalculateNodeDependencies(node, ref subGraph);
 
-                var edges = subGraph.Select(x => new Tuple<string, string>(x.Key, x.Value)).ToHashSet();
+                var edges = subGraph.Select(x => new Tuple<string, string>(x.Value, x.Key)).ToHashSet();
                 var nodes = subGraph.SelectMany(x => new[] { x.Key, x.Value }).ToHashSet();
                 var sortedNodes = this.TopologicalSort(nodes, edges);
                 foreach (var sortedNode in sortedNodes)
@@ -132,6 +145,6 @@ namespace ObservableModelExample.Obseravable
 
         public List<KeyValuePair<string, string>> DependencyGraph { get; }
 
-        private string CreateDependencyNodeName(params string[] propertyNames) => $"{thisVM.ID}.{string.Join(".", propertyNames)}";
+        private string CreateDependencyNodeName(string vmId, params string[] propertyNames) => $"{vmId}.{string.Join(".", propertyNames)}";
     }
 }

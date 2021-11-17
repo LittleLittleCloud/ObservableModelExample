@@ -10,31 +10,21 @@ namespace ObservableModelExample.Obseravable
 {
     public abstract class ObservableModel : INotifyPropertyChanged
     {
-        private TaskFactory taskFactory = new TaskFactory();
+        private Task notifyPropertyChangeTask;
 
         public ObservableModel()
         {
-            this.ID = Guid.NewGuid().ToString();
-            this.DependencyGraphManager = new DependencyGraphManager(this);
-        }
-
-        public ObservableModel(string id)
-        {
-            this.ID = id;
             this.DependencyGraphManager = new DependencyGraphManager(this);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public DependencyGraphManager DependencyGraphManager { get; }
-        
-        public string ID { get; }
 
         protected void NotifyPropertyChange([CallerMemberName]string propertyName = null)
         {
-            this.taskFactory.StartNew(async () =>
+            this.notifyPropertyChangeTask = Task.Run(async () =>
             {
-                this.OnPropertyChange(propertyName);
                 await this.DependencyGraphManager.TryExecuteNotifyDependencyNodeDelegateAsync(propertyName);
             });
         }
@@ -42,6 +32,14 @@ namespace ObservableModelExample.Obseravable
         public void OnPropertyChange(string propertyName = null)
         {
             this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public async Task WaitForDependencyUpdateCompleteAsync()
+        {
+            if (this.notifyPropertyChangeTask != null)
+            {
+                await this.notifyPropertyChangeTask;
+            }
         }
     }
 }
