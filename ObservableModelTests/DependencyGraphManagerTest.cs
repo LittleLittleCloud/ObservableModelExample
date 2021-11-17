@@ -125,7 +125,6 @@ namespace ObservableModelTests
         private class NaiveViewModelWithUpdateHandler : ObservableModel
         {
             private string a;
-            private string b;
 
             public NaiveViewModelWithUpdateHandler()
                 : base()
@@ -142,7 +141,7 @@ namespace ObservableModelTests
                 }
             }
 
-            public string B { get; set; }
+            public string B { get; private set; }
 
             [DependsOn(nameof(B))]
             public string C { get => this.B + "C"; }

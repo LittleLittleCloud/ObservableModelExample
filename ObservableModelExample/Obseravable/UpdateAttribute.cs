@@ -9,11 +9,11 @@ namespace ObservableModelExample.Obseravable
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public class UpdateAttribute: Attribute
     {
-        public UpdateAttribute(params string[] properties)
+        public UpdateAttribute(string property)
         {
-            this.Properties = properties;
+            this.Property = property;
         }
 
-        public string[] Properties { get; }
+        public string Property { get; }
     }
 }

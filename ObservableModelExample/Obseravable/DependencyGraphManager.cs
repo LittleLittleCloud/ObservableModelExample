@@ -91,14 +91,14 @@ namespace ObservableModelExample.Obseravable
 
                     foreach (var update in updates)
                     {
-                        var dependencyPaths = (update as UpdateAttribute).Properties;
-                        var to = this.CreateDependencyNodeName(THIS_VM, dependencyPaths);
+                        var dependencyPath = (update as UpdateAttribute).Property;
+                        var to = this.CreateDependencyNodeName(THIS_VM, dependencyPath);
                         this.DependencyGraph.Add(KeyValuePair.Create(to, from));
 
                         // if 'to' is thisVM's property, add notifyDependencyNodeDelegates.
-                        if (dependencyPaths.Count() == 1 && !this.notifyDependencyNodeDelegates.ContainsKey(to))
+                        if (dependencyPath.Count() == 1 && !this.notifyDependencyNodeDelegates.ContainsKey(to))
                         {
-                            this.notifyDependencyNodeDelegates.Add(to, () => Task.Run(() => vm.OnPropertyChange(dependencyPaths[0])));
+                            this.notifyDependencyNodeDelegates.Add(to, () => Task.Run(() => vm.OnPropertyChange(dependencyPath)));
                         }
                     }
                 }
