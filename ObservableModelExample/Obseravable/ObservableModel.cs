@@ -10,6 +10,8 @@ namespace ObservableModelExample.Obseravable
 {
     public abstract class ObservableModel : INotifyPropertyChanged
     {
+        public delegate Task NotifyDependencyNodeDelegateAsync();
+
         private Task notifyPropertyChangeTask;
 
         public ObservableModel()
