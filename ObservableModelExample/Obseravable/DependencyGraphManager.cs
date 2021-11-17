@@ -10,19 +10,20 @@ namespace ObservableModelExample.Obseravable
     {
         private const string THIS_VM = "this";
         private Dictionary<string, ObservableModel.NotifyDependencyNodeDelegateAsync> notifyDependencyNodeDelegates;
-        private Dictionary<string, ObservableModel> vms;
 
         public DependencyGraphManager(ObservableModel vm)
         {
-            this.vms = new Dictionary<string, ObservableModel>();
+            this.ViewModels = new Dictionary<string, ObservableModel>();
             this.DependencyGraph = new List<KeyValuePair<string, string>>();
             this.notifyDependencyNodeDelegates = new Dictionary<string, ObservableModel.NotifyDependencyNodeDelegateAsync>();
-            this.RegisterViewModel(vm);
+            this.Initialize(vm);
         }
 
-        public void RegisterViewModel(ObservableModel vm)
+        public Dictionary<string, ObservableModel> ViewModels;
+
+        public void Initialize(ObservableModel vm)
         {
-            this.vms[THIS_VM] = vm;
+            this.ViewModels[THIS_VM] = vm;
 
             // properties
             var properties = vm.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
@@ -32,9 +33,9 @@ namespace ObservableModelExample.Obseravable
                 if (dependencies.Length > 0)
                 {
                     var from = this.CreateDependencyNodeName(THIS_VM, property.Name);
-                    if (!this.notifyDependencyNodeDelegates.ContainsKey(from))
+                    if (!this.notifyDependencyNodeDelegates.ContainsKey(property.Name))
                     {
-                        this.notifyDependencyNodeDelegates.Add(from, async () => await Task.Run(() => vm.OnPropertyChange(property.Name)));
+                        this.notifyDependencyNodeDelegates.Add(property.Name, async () => await Task.Run(() => vm.OnPropertyChange(property.Name)));
                     }
                     foreach (var dependency in dependencies)
                     {
@@ -42,10 +43,10 @@ namespace ObservableModelExample.Obseravable
                         var to = this.CreateDependencyNodeName(THIS_VM, dependencyPaths);
                         this.DependencyGraph.Add(KeyValuePair.Create(from, to));
 
-                        // if 'to' is thisVM's property, add notifyDependencyNodeDelegates.
-                        if (dependencyPaths.Count() == 1 && !this.notifyDependencyNodeDelegates.ContainsKey(to))
+
+                        if (dependencyPaths.Count() == 1 && !this.notifyDependencyNodeDelegates.ContainsKey(dependencyPaths[0]))
                         {
-                            this.notifyDependencyNodeDelegates.Add(to, async () => await Task.Run(() => vm.OnPropertyChange(dependencyPaths[0])));
+                            this.notifyDependencyNodeDelegates.Add(dependencyPaths[0], async () => await Task.Run(() => vm.OnPropertyChange(dependencyPaths[0])));
                         }
 
                     }
@@ -60,10 +61,10 @@ namespace ObservableModelExample.Obseravable
                 var dependencies = method.GetCustomAttributes(typeof(DependsOnAttribute), false);
                 if (dependencies.Length > 0)
                 {
-                    if (!this.notifyDependencyNodeDelegates.ContainsKey(from))
+                    if (!this.notifyDependencyNodeDelegates.ContainsKey(method.Name))
                     {
                         var fun = (ObservableModel.NotifyDependencyNodeDelegateAsync)method.CreateDelegate(typeof(ObservableModel.NotifyDependencyNodeDelegateAsync), vm);
-                        this.notifyDependencyNodeDelegates.Add(from, async () => await fun());
+                        this.notifyDependencyNodeDelegates.Add(method.Name, async () => await fun());
                     }
 
                     foreach(var dependency in dependencies)
@@ -73,9 +74,9 @@ namespace ObservableModelExample.Obseravable
                         this.DependencyGraph.Add(KeyValuePair.Create(from, to));
 
                         // if 'to' is thisVM's property, add notifyDependencyNodeDelegates.
-                        if (dependencyPaths.Count() == 1 && !this.notifyDependencyNodeDelegates.ContainsKey(to))
+                        if (dependencyPaths.Count() == 1 && !this.notifyDependencyNodeDelegates.ContainsKey(dependencyPaths[0]))
                         {
-                            this.notifyDependencyNodeDelegates.Add(to, async () => await Task.Run(() => vm.OnPropertyChange(dependencyPaths[0])));
+                            this.notifyDependencyNodeDelegates.Add(dependencyPaths[0], async () => await Task.Run(() => vm.OnPropertyChange(dependencyPaths[0])));
                         }
                     }
                 }
@@ -83,10 +84,10 @@ namespace ObservableModelExample.Obseravable
                 var updates = method.GetCustomAttributes(typeof(UpdateAttribute), false);
                 if (updates.Length > 0)
                 {
-                    if (!this.notifyDependencyNodeDelegates.ContainsKey(from))
+                    if (!this.notifyDependencyNodeDelegates.ContainsKey(method.Name))
                     {
                         var fun = (ObservableModel.NotifyDependencyNodeDelegateAsync)method.CreateDelegate(typeof(ObservableModel.NotifyDependencyNodeDelegateAsync), vm);
-                        this.notifyDependencyNodeDelegates.Add(from, () => fun());
+                        this.notifyDependencyNodeDelegates.Add(method.Name, () => fun());
                     }
 
                     foreach (var update in updates)
@@ -96,29 +97,80 @@ namespace ObservableModelExample.Obseravable
                         this.DependencyGraph.Add(KeyValuePair.Create(to, from));
 
                         // if 'to' is thisVM's property, add notifyDependencyNodeDelegates.
-                        if (dependencyPath.Count() == 1 && !this.notifyDependencyNodeDelegates.ContainsKey(to))
+                        if (!this.notifyDependencyNodeDelegates.ContainsKey(dependencyPath))
                         {
-                            this.notifyDependencyNodeDelegates.Add(to, () => Task.Run(() => vm.OnPropertyChange(dependencyPath)));
+                            this.notifyDependencyNodeDelegates.Add(dependencyPath, () => Task.Run(() => vm.OnPropertyChange(dependencyPath)));
                         }
                     }
                 }
             }
+        }
+        
+        public void RegisterViewModel<T>(T vm, string prefix) where T: ObservableModel
+        {
+            prefix = this.CreateDependencyNodeName(THIS_VM, prefix);
+            var dependencyNodes = vm.DependencyGraphManager.DependencyGraph.Where(kv => kv.Value.StartsWith(prefix));
+            IEnumerable<KeyValuePair<string, string>> subGraph = new List<KeyValuePair<string, string>>();
+            foreach(var dependencyNode in dependencyNodes)
+            {
+                vm.DependencyGraphManager.CalculateNodeDependencies(dependencyNode.Value, ref subGraph);
+            }
+
+            // register vm in vm.ViewModels
+            foreach(var node in subGraph.SelectMany(kv => new[] {kv.Key, kv.Value }).Distinct())
+            {
+                var viewModelId = this.GetViewModelIdFromDependencyNodeName(node);
+                if (!this.ViewModels.ContainsKey(viewModelId))
+                {
+                    this.ViewModels.Add(viewModelId, vm.DependencyGraphManager.ViewModels[viewModelId]);
+                }
+            }
+
+            var vmId = this.CreateViewModelId<T>();
+            this.ViewModels[vmId] = vm;
+            foreach(var kv in subGraph)
+            {
+                string updateVMId(string node)
+                {
+                    if (node.Contains(prefix))
+                        return node.Replace(prefix, THIS_VM);
+                    else
+                        return node.Replace(THIS_VM, vmId);
+                }
+
+                this.DependencyGraph.Add(KeyValuePair.Create(updateVMId(kv.Key), updateVMId(kv.Value)));
+            }
+        }
+
+        private string CreateViewModelId<T>() where T : ObservableModel
+        {
+            var index = this.ViewModels.Keys.Where(k => k.Contains(typeof(T).Name)).Count();
+            return $"{typeof(T).Name}_{index}";
         }
 
         public async Task<bool> TryExecuteNotifyDependencyNodeDelegateAsync(string node)
         {
             try
             {
-                node = this.CreateDependencyNodeName(THIS_VM, node);
+                var prefix = this.CreateDependencyNodeName(THIS_VM, node);
+                var dependencyNodes = this.DependencyGraph.Where(kv => kv.Value.StartsWith(prefix));
                 IEnumerable<KeyValuePair<string, string>> subGraph = new List<KeyValuePair<string, string>>();
-                this.CalculateNodeDependencies(node, ref subGraph);
+                foreach (var dependencyNode in dependencyNodes)
+                {
+                    this.CalculateNodeDependencies(dependencyNode.Value, ref subGraph);
+                }
 
                 var edges = subGraph.Select(x => new Tuple<string, string>(x.Value, x.Key)).Distinct().OrderBy(kv => kv.Item1).ToList();
                 var nodes = subGraph.SelectMany(x => new[] { x.Key, x.Value }).Distinct().OrderBy(k => k).ToList();
                 var sortedNodes = this.TopologicalSort(nodes, edges);
                 foreach (var sortedNode in sortedNodes)
                 {
-                    await this.notifyDependencyNodeDelegates[sortedNode]();
+                    var vmId = this.GetViewModelIdFromDependencyNodeName(sortedNode);
+                    var dependencyFullPath = this.GetDependencyPathFromDependencyNodeName(sortedNode);
+                    if(this.ViewModels[vmId].DependencyGraphManager.notifyDependencyNodeDelegates.TryGetValue(dependencyFullPath, out var fun))
+                    {
+                        await fun();
+                    }
                 }
 
                 return true;
@@ -133,14 +185,14 @@ namespace ObservableModelExample.Obseravable
         private void CalculateNodeDependencies(string node, ref IEnumerable<KeyValuePair<string, string>> graph)
         {
             // BFS
-            var edges = this.DependencyGraph.Where(kv => kv.Value == node);
+            var edges = this.DependencyGraph.Where(kv => kv.Value == node).ToList();
             
             if(edges.Count() == 0)
             {
                 return;
             }
 
-            graph = graph.Concat(edges);
+            graph = graph.Concat(edges).Distinct();
             foreach(var edge in edges)
             {
                 this.CalculateNodeDependencies(edge.Key, ref graph);
@@ -199,5 +251,9 @@ namespace ObservableModelExample.Obseravable
         public List<KeyValuePair<string, string>> DependencyGraph { get; }
 
         private string CreateDependencyNodeName(string vmId, params string[] propertyNames) => $"{vmId}.{string.Join(".", propertyNames)}";
+
+        private string GetViewModelIdFromDependencyNodeName(string node) => node.Split('.').First();
+
+        private string GetDependencyPathFromDependencyNodeName(string node) => string.Join(".", node.Split('.').Skip(1));
     }
 }

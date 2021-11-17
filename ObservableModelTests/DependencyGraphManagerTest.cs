@@ -17,14 +17,10 @@ namespace ObservableModelTests
             var vm1 = new NaiveViewModel();
             var manager = vm1.DependencyGraphManager;
 
-            manager.DependencyGraph.Count().Should().Be(7);
+            manager.DependencyGraph.Count().Should().Be(3);
             manager.DependencyGraph.Contains(KeyValuePair.Create("this.C", "this.A")).Should().BeTrue();
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.D", "this.A")).Should().BeTrue();
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.D", "this.B")).Should().BeTrue();
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.E", "this.A")).Should().BeTrue();
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.E", "this.B")).Should().BeTrue();
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.E", "this.C")).Should().BeTrue();
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.E", "this.D")).Should().BeTrue();
+            manager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.A")).Should().BeTrue();
+            manager.DependencyGraph.Contains(KeyValuePair.Create("this.C", "this.B")).Should().BeTrue();
         }
 
         [Fact]
@@ -52,12 +48,7 @@ namespace ObservableModelTests
 
             vm1.A = "a";
             await vm1.WaitForDependencyUpdateCompleteAsync();
-            observer.Should().Equal("A", "C", "D", "E");
-            observer.Clear();
-
-            vm1.B = "b";
-            await vm1.WaitForDependencyUpdateCompleteAsync();
-            observer.Should().Equal("B", "D", "E");
+            observer.Should().Equal("A", "B", "C");
         }
 
         [Fact]
@@ -77,10 +68,64 @@ namespace ObservableModelTests
             vm.C.Should().Be("BaC");
         }
 
+        [Fact]
+        public void Nest_view_model_dependency_graph_test()
+        {
+            var vm = new NestViewModel();
+            var manager = vm.DependencyGraphManager;
+
+            manager.DependencyGraph.Count().Should().Be(2);
+            manager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.B")).Should().BeTrue();
+            manager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.NestVM.B")).Should().BeTrue();
+
+            vm.NestVM = new NestViewModel();
+            vm.NestVM.DependencyGraphManager.DependencyGraph.Count().Should().Be(4);
+            vm.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.B")).Should().BeTrue();
+            vm.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.NestVM.B")).Should().BeTrue();
+            vm.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.B", "this.B")).Should().BeTrue();
+            vm.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.B", "this.NestVM.B")).Should().BeTrue();
+
+            vm.NestVM.NestVM = new NestViewModel();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Count().Should().Be(6);
+
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.NestVM.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.B", "this.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.B", "NestViewModel_1.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_1.B", "this.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_1.B", "this.NestVM.B")).Should().BeTrue();
+        }
+
+        [Fact]
+        public async void Nest_view_model_dependency_notify_test()
+        {
+            var vm = new NestViewModel();
+            var observer = new List<string>();
+            vm.PropertyChanged += (sender, e) =>
+            {
+                if (e.PropertyName != null)
+                    observer.Add(e.PropertyName);
+            };
+
+            vm.NestVM = new NestViewModel();
+            await vm.WaitForDependencyUpdateCompleteAsync();
+
+            observer.Should().Equal("B");
+            observer.Clear();
+
+            vm.NestVM.NestVM = new NestViewModel();
+            await vm.NestVM.WaitForDependencyUpdateCompleteAsync();
+            observer.Should().Equal("B");
+            observer.Clear();
+
+            vm.NestVM.NestVM.NestVM = new NestViewModel();
+            await vm.NestVM.NestVM.WaitForDependencyUpdateCompleteAsync();
+            observer.Should().Equal("B");
+        }
+
         private class NaiveViewModel : ObservableModel
         {
             private string a;
-            private string b;
 
             public NaiveViewModel()
                 : base()
@@ -97,29 +142,12 @@ namespace ObservableModelTests
                 }
             }
 
-            public string B
-            {
-                get => this.b;
-                set
-                {
-                    this.b = value;
-                    this.NotifyPropertyChange();
-                }
-            }
-
-            [DependsOn(nameof(A))]
-            public string C { get => this.A + "C"; }
-
             [DependsOn(nameof(A))]
             [DependsOn(nameof(B))]
-            [DependsOn(nameof(C))]
-            [DependsOn(nameof(D))]
-            public string E { get => this.A + this.B + this.C + this.D; }
+            public string C { get => this.A + this.B + "C"; }
 
             [DependsOn(nameof(A))]
-            [DependsOn(nameof(B))]
-            public string D { get => this.A + this.B; }
-
+            public string B { get => this.A + "B"; }
         }
 
         private class NaiveViewModelWithUpdateHandler : ObservableModel
@@ -154,6 +182,29 @@ namespace ObservableModelTests
             {
                 await Task.Delay(5000);
                 this.B = "B" + this.A;
+            }
+        }
+
+        private class NestViewModel: ObservableModel
+        {
+            private NestViewModel a;
+
+            public NestViewModel NestVM
+            {
+                get => this.a;
+                set
+                {
+                    this.a = value;
+                    value.RegisterViewModel(this);
+                    this.NotifyPropertyChange();
+                }
+            }
+
+            [DependsOn(nameof(NestVM), nameof(NestVM), nameof(B))]
+            [DependsOn(nameof(NestVM), nameof(B))]
+            public string B
+            {
+                get => this.NestVM.NestVM.B + this.NestVM.B + "B";
             }
         }
     }
