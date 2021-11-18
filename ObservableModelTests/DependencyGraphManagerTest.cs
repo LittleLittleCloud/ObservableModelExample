@@ -91,9 +91,9 @@ namespace ObservableModelTests
             vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.B")).Should().BeTrue();
             vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.NestVM.B")).Should().BeTrue();
             vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.B", "this.B")).Should().BeTrue();
-            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.B", "NestViewModel_1.B")).Should().BeTrue();
-            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_1.B", "this.B")).Should().BeTrue();
-            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_1.B", "this.NestVM.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.B", "this.NestVM.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.NestViewModel_0.B", "this.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.NestViewModel_0.B", "NestViewModel_0.B")).Should().BeTrue();
         }
 
         [Fact]

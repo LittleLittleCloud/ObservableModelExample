@@ -109,6 +109,8 @@ namespace ObservableModelExample.Obseravable
         public void RegisterViewModel<T>(T vm, string prefix) where T: ObservableModel
         {
             prefix = this.CreateDependencyNodeName(THIS_VM, prefix);
+            var vmId = this.CreateViewModelId<T>();
+            this.ViewModels[vmId] = vm;
             var dependencyNodes = vm.DependencyGraphManager.DependencyGraph.Where(kv => kv.Value.StartsWith(prefix));
             IEnumerable<KeyValuePair<string, string>> subGraph = new List<KeyValuePair<string, string>>();
             foreach(var dependencyNode in dependencyNodes)
@@ -119,23 +121,30 @@ namespace ObservableModelExample.Obseravable
             // register vm in vm.ViewModels
             foreach(var node in subGraph.SelectMany(kv => new[] {kv.Key, kv.Value }).Distinct())
             {
-                var viewModelId = this.GetViewModelIdFromDependencyNodeName(node);
-                if (!this.ViewModels.ContainsKey(viewModelId))
+                var viewModelId = this.GetViewModelIdFromDependencyPath(node);
+                var newViewModelId = viewModelId == THIS_VM ? vmId : $"{vmId}.{viewModelId}";
+                if (!this.ViewModels.ContainsKey(newViewModelId) && vm.DependencyGraphManager.ViewModels.ContainsKey(viewModelId))
                 {
-                    this.ViewModels.Add(viewModelId, vm.DependencyGraphManager.ViewModels[viewModelId]);
+                    this.ViewModels.Add(newViewModelId, vm.DependencyGraphManager.ViewModels[viewModelId]);
                 }
             }
 
-            var vmId = this.CreateViewModelId<T>();
-            this.ViewModels[vmId] = vm;
             foreach(var kv in subGraph)
             {
                 string updateVMId(string node)
                 {
                     if (node.Contains(prefix))
+                    {
                         return node.Replace(prefix, THIS_VM);
-                    else
+                    }
+                    else if(node.Contains(THIS_VM))
+                    {
                         return node.Replace(THIS_VM, vmId);
+                    }
+                    else
+                    {
+                        return $"{vmId}.{node}";
+                    }
                 }
 
                 this.DependencyGraph.Add(KeyValuePair.Create(updateVMId(kv.Key), updateVMId(kv.Value)));
@@ -165,9 +174,9 @@ namespace ObservableModelExample.Obseravable
                 var sortedNodes = this.TopologicalSort(nodes, edges);
                 foreach (var sortedNode in sortedNodes)
                 {
-                    var vmId = this.GetViewModelIdFromDependencyNodeName(sortedNode);
-                    var dependencyFullPath = this.GetDependencyPathFromDependencyNodeName(sortedNode);
-                    if(this.ViewModels[vmId].DependencyGraphManager.notifyDependencyNodeDelegates.TryGetValue(dependencyFullPath, out var fun))
+                    var vmId = this.GetViewModelIdFromDependencyPath(sortedNode);
+                    var dependencyFullPath = this.GetDependencyNameFromDependencyPath(sortedNode);
+                    if(this.ViewModels.ContainsKey(vmId) && this.ViewModels[vmId].DependencyGraphManager.notifyDependencyNodeDelegates.TryGetValue(dependencyFullPath, out var fun))
                     {
                         await fun();
                     }
@@ -179,7 +188,6 @@ namespace ObservableModelExample.Obseravable
             {
                 return false;
             }
-            
         }
 
         private void CalculateNodeDependencies(string node, ref IEnumerable<KeyValuePair<string, string>> graph)
@@ -252,8 +260,8 @@ namespace ObservableModelExample.Obseravable
 
         private string CreateDependencyNodeName(string vmId, params string[] propertyNames) => $"{vmId}.{string.Join(".", propertyNames)}";
 
-        private string GetViewModelIdFromDependencyNodeName(string node) => node.Split('.').First();
+        private string GetViewModelIdFromDependencyPath(string path) => string.Join(".", path.Split(".").SkipLast(1));
 
-        private string GetDependencyPathFromDependencyNodeName(string node) => string.Join(".", node.Split('.').Skip(1));
+        private string GetDependencyNameFromDependencyPath(string path) => path.Split('.').Last();
     }
 }
