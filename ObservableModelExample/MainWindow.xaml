@@ -7,6 +7,12 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
+        <StackPanel
+            Orientation="Vertical">
+            <local:NameCardWindow DataContext="{Binding NameCard}" />
+            <Label Content="Other Information" />
+            <TextBlock Text="{Binding OtherInformation, Mode=OneWay}" />
+        </StackPanel>
 
     </Grid>
 </Window>

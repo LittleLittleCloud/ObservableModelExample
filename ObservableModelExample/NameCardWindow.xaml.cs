@@ -1,5 +1,4 @@
-﻿using ObservableModelExample.ViewModel;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,16 +16,12 @@ using System.Windows.Shapes;
 namespace ObservableModelExample
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for NameCardWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class NameCardWindow : UserControl
     {
-        public MainWindow()
+        public NameCardWindow()
         {
-            var mainWindwoVM = new MainWindowViewModel();
-            var nameCardVM = new NameCardViewModel();
-            mainWindwoVM.NameCard = nameCardVM;
-            this.DataContext = mainWindwoVM;
             InitializeComponent();
         }
     }

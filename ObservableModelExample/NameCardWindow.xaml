@@ -1,0 +1,44 @@
+﻿<UserControl x:Class="ObservableModelExample.NameCardWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ObservableModelExample"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <StackPanel
+            Orientation="Vertical">
+            <TextBlock
+                HorizontalAlignment="Left"
+                Width="100"
+                Text="First Name" />
+            <TextBox
+                HorizontalAlignment="Left"
+                Width="100"
+                Text="{Binding FirstName}" />
+            <TextBlock
+                HorizontalAlignment="Left"
+                Width="100"
+                Text="Last Name"/>
+            <TextBox
+                Width="100"
+                HorizontalAlignment="Left"
+                Text="{Binding LastName}" />
+            <TextBlock
+                HorizontalAlignment="Left"
+                Width="100"
+                Text="Full Name"/>
+            <TextBlock
+                Width="100"
+                HorizontalAlignment="Left"
+                Text="{Binding FullName}" />
+            <TextBlock
+                Text="Description"
+                HorizontalAlignment="Left"/>
+            <TextBlock
+                Text="{Binding Description, Mode=OneWay}"
+                HorizontalAlignment="Left"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

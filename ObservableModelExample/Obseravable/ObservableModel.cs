@@ -31,13 +31,13 @@ namespace ObservableModelExample.Obseravable
             });
         }
 
-        protected void RegisterViewModel<T>(T value, [CallerMemberName] string propertyName = null)
+        public void RegisterViewModel<T>(T value, [CallerMemberName] string propertyName = null)
             where T: ObservableModel
         {
             this.DependencyGraphManager.RegisterViewModel(value, propertyName);
         }
 
-        protected void UnegisterViewModel<T>(T value)
+        public void UnegisterViewModel<T>(T value)
             where T : ObservableModel
         {
             this.DependencyGraphManager.UnregisterViewModel(value);
