@@ -123,6 +123,37 @@ namespace ObservableModelTests
             observer.Should().Equal("B");
         }
 
+        [Fact]
+        public async void Nest_view_model_unregister_test()
+        {
+            var vm = new NestViewModel();
+            var vm2 = new NestViewModel();
+            var observer = new List<string>();
+            vm.PropertyChanged += (sender, e) =>
+            {
+                if (e.PropertyName != null)
+                    observer.Add(e.PropertyName);
+            };
+
+            // register vm2 through setter
+            vm.NestVM = vm2;
+            await vm.WaitForDependencyUpdateCompleteAsync();
+
+            observer.Should().Equal("B");
+            observer.Clear();
+
+            // unregister vm by setting vm.NestVM to null (or another vm)
+            vm.NestVM = null;
+            await vm.WaitForDependencyUpdateCompleteAsync();
+            observer.Should().Equal("B");
+            observer.Clear();
+
+            // since it's unregistered, updating vm2 won't trigger notification in vm.
+            vm2.NestVM = new NestViewModel();
+            await vm2.WaitForDependencyUpdateCompleteAsync();
+            observer.Should().BeEmpty();
+        }
+
         private class NaiveViewModel : ObservableModel
         {
             private string a;
@@ -194,8 +225,9 @@ namespace ObservableModelTests
                 get => this.a;
                 set
                 {
+                    this.a?.UnegisterViewModel(this);
                     this.a = value;
-                    value.RegisterViewModel(this);
+                    value?.RegisterViewModel(this);
                     this.NotifyPropertyChange();
                 }
             }

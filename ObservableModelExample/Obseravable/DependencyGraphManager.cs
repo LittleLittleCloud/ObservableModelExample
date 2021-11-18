@@ -106,8 +106,13 @@ namespace ObservableModelExample.Obseravable
             }
         }
         
-        public void RegisterViewModel<T>(T vm, string prefix) where T: ObservableModel
+        public void RegisterViewModel<T>(T? vm, string prefix) where T: ObservableModel
         {
+            if(vm == null)
+            {
+                return;
+            }
+
             prefix = this.CreateDependencyNodeName(THIS_VM, prefix);
             var vmId = this.CreateViewModelId<T>();
             this.ViewModels[vmId] = vm;
@@ -148,6 +153,17 @@ namespace ObservableModelExample.Obseravable
                 }
 
                 this.DependencyGraph.Add(KeyValuePair.Create(updateVMId(kv.Key), updateVMId(kv.Value)));
+            }
+        }
+
+        public void UnregisterViewModel<T>(T vm) where T: ObservableModel
+        {
+            var vmKv = this.ViewModels.Where(kv => kv.Value == vm).FirstOrDefault();
+            if(vmKv is KeyValuePair<string, ObservableModel> kv)
+            {
+                var vmId = kv.Key;
+                this.ViewModels.Remove(kv.Key);
+                this.DependencyGraph.RemoveAll(val => val.Key.StartsWith(vmId) || val.Value.StartsWith(vmId));
             }
         }
 

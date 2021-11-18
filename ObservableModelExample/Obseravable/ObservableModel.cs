@@ -37,6 +37,12 @@ namespace ObservableModelExample.Obseravable
             this.DependencyGraphManager.RegisterViewModel(value, propertyName);
         }
 
+        protected void UnegisterViewModel<T>(T value)
+            where T : ObservableModel
+        {
+            this.DependencyGraphManager.UnregisterViewModel(value);
+        }
+
         public void OnPropertyChange(string propertyName = null)
         {
             this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
