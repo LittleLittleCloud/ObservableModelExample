@@ -1,5 +1,4 @@
 ﻿using FluentAssertions;
-using ObservableModelExample.Obseravable;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using ObservableModel.CodeGenerator;
 using Xunit;
 
 namespace ObservableModelTests
@@ -26,18 +26,6 @@ namespace ObservableModelTests
         }
 
         [Fact]
-        public void Naive_view_model_with_update_handler_dependency_graph_test()
-        {
-            var vm = new NaiveViewModelWithUpdateHandler();
-            var manager = vm.DependencyGraphManager;
-
-            manager.DependencyGraph.Count().Should().Be(3);
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.C", "this.B")).Should().BeTrue();
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.TimeConsumingTask1Async")).Should().BeTrue();
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.TimeConsumingTask1Async", "this.A")).Should().BeTrue();
-        }
-
-        [Fact]
         public async void Naive_view_mode_dependency_notify_test()
         {
             var vm1 = new NaiveViewModel();
@@ -51,23 +39,6 @@ namespace ObservableModelTests
             vm1.A = "a";
             await vm1.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
             observer.Should().Equal("A", "B", "C");
-        }
-
-        [Fact]
-        public async void Naive_view_mode_with_update_handler_dependency_notify_test()
-        {
-            var vm = new NaiveViewModelWithUpdateHandler();
-            var observer = new List<string>();
-            vm.PropertyChanged += (sender, e) =>
-            {
-                if (e.PropertyName != null)
-                    observer.Add(e.PropertyName);
-            };
-
-            vm.A = "a";
-            await vm.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
-            observer.Should().Equal("A", "B", "C");
-            vm.C.Should().Be("BaC");
         }
 
         [Fact]
@@ -155,118 +126,31 @@ namespace ObservableModelTests
             await vm2.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
             observer.Should().BeEmpty();
         }
+    }
 
-        private class NaiveViewModel : IObservableModel
+    public partial class NaiveViewModel
+    {
+        [AutoNotify]
+        private string a;
+
+        [DependsOn(nameof(A))]
+        [DependsOn(nameof(B))]
+        public string C { get => this.A + this.B + "C"; }
+
+        [DependsOn(nameof(A))]
+        public string B { get => this.A + "B"; }
+    }
+
+    public partial class NestViewModel
+    {
+        [AutoNotify]
+        private NestViewModel nestVM;
+
+        [DependsOn(nameof(NestVM), nameof(NestVM), nameof(B))]
+        [DependsOn(nameof(NestVM), nameof(B))]
+        public string B
         {
-            private string a;
-
-            public NaiveViewModel()
-            {
-                this.DependencyGraphManager = new DependencyGraphManager(this);
-            }
-
-            public string A
-            {
-                get => this.a;
-                set
-                {
-                    this.a = value;
-                    this.DependencyGraphManager.NotifyPropertyChange();
-                }
-            }
-
-            [DependsOn(nameof(A))]
-            [DependsOn(nameof(B))]
-            public string C { get => this.A + this.B + "C"; }
-
-            [DependsOn(nameof(A))]
-            public string B { get => this.A + "B"; }
-
-            public DependencyGraphManager DependencyGraphManager { get; }
-
-            public event PropertyChangedEventHandler? PropertyChanged;
-
-            public void OnPropertyChange([CallerMemberName] string propertyName = null)
-            {
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            }
-        }
-
-        private class NaiveViewModelWithUpdateHandler : IObservableModel
-        {
-            private string a;
-
-            public NaiveViewModelWithUpdateHandler()
-            {
-                this.DependencyGraphManager = new DependencyGraphManager(this);
-            }
-
-            public string A
-            {
-                get => this.a;
-                set
-                {
-                    this.a = value;
-                    this.DependencyGraphManager.NotifyPropertyChange();
-                }
-            }
-
-            public string B { get; private set; }
-
-            [DependsOn(nameof(B))]
-            public string C { get => this.B + "C"; }
-
-            public DependencyGraphManager DependencyGraphManager { get; }
-
-            public event PropertyChangedEventHandler? PropertyChanged;
-
-            public void OnPropertyChange([CallerMemberName] string propertyName = null)
-            {
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            }
-
-
-            // The TimeConsumingTask1Async solves time consuming getter blocking UI issue by transferring the expensive getter into an async call and setter
-            [DependsOn(nameof(A))]
-            [Update(nameof(B))]
-            public async Task TimeConsumingTask1Async()
-            {
-                await Task.Delay(5000);
-                this.B = "B" + this.A;
-            }
-        }
-
-        private class NestViewModel: IObservableModel
-        {
-            private NestViewModel a;
-
-            public NestViewModel NestVM
-            {
-                get => this.a;
-                set
-                {
-                    this.a?.DependencyGraphManager.UnregisterViewModel(this);
-                    this.a = value;
-                    value?.DependencyGraphManager.RegisterViewModel(this);
-                    this.DependencyGraphManager.NotifyPropertyChange();
-                }
-            }
-
-            [DependsOn(nameof(NestVM), nameof(NestVM), nameof(B))]
-            [DependsOn(nameof(NestVM), nameof(B))]
-            public string B
-            {
-                get => this.NestVM.NestVM.B + this.NestVM.B + "B";
-            }
-
-            public DependencyGraphManager DependencyGraphManager => throw new NotImplementedException();
-
-            public event PropertyChangedEventHandler? PropertyChanged;
-
-            public void OnPropertyChange([CallerMemberName] string propertyName = null)
-            {
-                throw new NotImplementedException();
-            }
+            get => this.NestVM.NestVM.B + this.NestVM.B + "B";
         }
     }
 }

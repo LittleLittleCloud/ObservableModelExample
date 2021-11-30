@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ObservableModelExample\ObservableModelExample.csproj" />
+	  <ProjectReference Include="..\ObservableModel.CodeGenerator\ObservableModel.CodeGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>
