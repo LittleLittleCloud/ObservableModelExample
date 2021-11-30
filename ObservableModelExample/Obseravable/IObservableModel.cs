@@ -1,14 +1,13 @@
 ﻿using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ObservableModelExample.Obseravable
 {
-    public interface IObservableModel
+    public interface IObservableModel: INotifyPropertyChanged
     {
         DependencyGraphManager DependencyGraphManager { get; }
 
-        event PropertyChangedEventHandler? PropertyChanged;
-
-        void OnPropertyChange(string propertyName = null);
+        void OnPropertyChange([CallerMemberName]string propertyName = null);
     }
 }

@@ -5,11 +5,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ObservableModelExample.ViewModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace ObservableModelExample
 {
-    public class MainWindowViewModel: ObservableModel
+    public class MainWindowViewModel: IObservableModel
     {
+        public MainWindowViewModel()
+        {
+            this.DependencyGraphManager = new DependencyGraphManager(this);
+        }
+
         private NameCardViewModel nameCard;
 
         public NameCardViewModel NameCard
@@ -37,6 +44,15 @@ namespace ObservableModelExample
 
                 return null;
             }
+        }
+
+        public DependencyGraphManager DependencyGraphManager { get; }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        public void OnPropertyChange([CallerMemberName] string propertyName = null)
+        {
+            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

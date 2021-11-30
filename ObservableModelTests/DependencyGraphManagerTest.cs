@@ -2,7 +2,9 @@
 using ObservableModelExample.Obseravable;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -154,13 +156,13 @@ namespace ObservableModelTests
             observer.Should().BeEmpty();
         }
 
-        private class NaiveViewModel : ObservableModel
+        private class NaiveViewModel : IObservableModel
         {
             private string a;
 
             public NaiveViewModel()
-                : base()
             {
+                this.DependencyGraphManager = new DependencyGraphManager(this);
             }
 
             public string A
@@ -179,15 +181,24 @@ namespace ObservableModelTests
 
             [DependsOn(nameof(A))]
             public string B { get => this.A + "B"; }
+
+            public DependencyGraphManager DependencyGraphManager { get; }
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+
+            public void OnPropertyChange([CallerMemberName] string propertyName = null)
+            {
+                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            }
         }
 
-        private class NaiveViewModelWithUpdateHandler : ObservableModel
+        private class NaiveViewModelWithUpdateHandler : IObservableModel
         {
             private string a;
 
             public NaiveViewModelWithUpdateHandler()
-                : base()
             {
+                this.DependencyGraphManager = new DependencyGraphManager(this);
             }
 
             public string A
@@ -205,7 +216,16 @@ namespace ObservableModelTests
             [DependsOn(nameof(B))]
             public string C { get => this.B + "C"; }
 
-            
+            public DependencyGraphManager DependencyGraphManager { get; }
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+
+            public void OnPropertyChange([CallerMemberName] string propertyName = null)
+            {
+                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            }
+
+
             // The TimeConsumingTask1Async solves time consuming getter blocking UI issue by transferring the expensive getter into an async call and setter
             [DependsOn(nameof(A))]
             [Update(nameof(B))]
