@@ -9,36 +9,11 @@ using System.Threading.Tasks;
 
 namespace ObservableModelExample.ViewModel
 {
-    public class NameCardViewModel : IObservableModel
+    public partial class NameCardViewModel
     {
         private string firstName;
         private string lastName;
-
-        public NameCardViewModel()
-        {
-            this.DependencyGraphManager = new DependencyGraphManager(this);
-        }
-        
-
-        public string FirstName
-        {
-            get => this.firstName;
-            set
-            {
-                this.firstName = value;
-                this.DependencyGraphManager.NotifyPropertyChange();
-            }
-        }
-
-        public string LastName
-        {
-            get => this.lastName;
-            set
-            {
-                this.lastName = value;
-                this.DependencyGraphManager.NotifyPropertyChange();
-            }
-        }
+        private string description;
 
         [DependsOn(nameof(LastName))]
         [DependsOn(nameof(FirstName))]
@@ -55,17 +30,7 @@ namespace ObservableModelExample.ViewModel
             }
         }
 
-        public string Description
-        {
-            get; set;
-        }
-
-        public DependencyGraphManager DependencyGraphManager { get; }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
         [DependsOn(nameof(FullName))]
-        [Update(nameof(Description))]
         public async Task FetchDescriptionFromBackgroundAsync()
         {
             if(this.FullName is string)
@@ -74,12 +39,6 @@ namespace ObservableModelExample.ViewModel
                 await Task.Delay(5000);
                 this.Description = $"{this.FullName} doesn't have any description....";
             }
-            
-        }
-
-        public void OnPropertyChange([CallerMemberName] string propertyName = null)
-        {
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

@@ -44,13 +44,6 @@ namespace ObservableModelExample.Obseravable
                         var dependencyPaths = (dependency as DependsOnAttribute).Properties;
                         var to = this.CreateDependencyNodeName(THIS_VM, dependencyPaths);
                         this.DependencyGraph.Add(KeyValuePair.Create(from, to));
-
-
-                        if (dependencyPaths.Count() == 1 && !this.notifyDependencyNodeDelegates.ContainsKey(dependencyPaths[0]))
-                        {
-                            this.notifyDependencyNodeDelegates.Add(dependencyPaths[0], async () => await Task.Run(() => vm.OnPropertyChange(dependencyPaths[0])));
-                        }
-
                     }
                 }
             }
@@ -74,12 +67,6 @@ namespace ObservableModelExample.Obseravable
                         var dependencyPaths = (dependency as DependsOnAttribute).Properties;
                         var to = this.CreateDependencyNodeName(THIS_VM, dependencyPaths);
                         this.DependencyGraph.Add(KeyValuePair.Create(from, to));
-
-                        // if 'to' is thisVM's property, add notifyDependencyNodeDelegates.
-                        if (dependencyPaths.Count() == 1 && !this.notifyDependencyNodeDelegates.ContainsKey(dependencyPaths[0]))
-                        {
-                            this.notifyDependencyNodeDelegates.Add(dependencyPaths[0], async () => await Task.Run(() => vm.OnPropertyChange(dependencyPaths[0])));
-                        }
                     }
                 }
 
@@ -112,6 +99,7 @@ namespace ObservableModelExample.Obseravable
         {
             this.notifyPropertyChangedTask = Task.Run(async () =>
             {
+                this.ViewModels[THIS_VM].OnPropertyChange(propertyName);
                 await this.TryExecuteNotifyDependencyNodeDelegateAsync(propertyName);
             });
         }

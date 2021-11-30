@@ -112,7 +112,7 @@ namespace ObservableModelTests
             vm.NestVM = new NestViewModel();
             await vm.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
 
-            observer.Should().Equal("B");
+            observer.Should().Equal("NestVM", "B");
             observer.Clear();
 
             vm.NestVM.NestVM = new NestViewModel();
@@ -141,13 +141,13 @@ namespace ObservableModelTests
             vm.NestVM = vm2;
             await vm.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
 
-            observer.Should().Equal("B");
+            observer.Should().Equal("NestVM", "B");
             observer.Clear();
 
             // unregister vm by setting vm.NestVM to null (or another vm)
             vm.NestVM = null;
             await vm.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
-            observer.Should().Equal("B");
+            observer.Should().Equal("NestVM", "B");
             observer.Clear();
 
             // since it's unregistered, updating vm2 won't trigger notification in vm.

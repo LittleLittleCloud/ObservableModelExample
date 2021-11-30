@@ -10,26 +10,9 @@ using System.Runtime.CompilerServices;
 
 namespace ObservableModelExample
 {
-    public class MainWindowViewModel: IObservableModel
+    public partial class MainWindowViewModel
     {
-        public MainWindowViewModel()
-        {
-            this.DependencyGraphManager = new DependencyGraphManager(this);
-        }
-
         private NameCardViewModel nameCard;
-
-        public NameCardViewModel NameCard
-        {
-            get => this.nameCard;
-            set
-            {
-                this.nameCard?.DependencyGraphManager.UnregisterViewModel(this);
-                this.nameCard = value;
-                value.DependencyGraphManager.RegisterViewModel(this);
-                this.DependencyGraphManager.NotifyPropertyChange();
-            }
-        }
 
         [DependsOn(nameof(NameCard), nameof(NameCardViewModel.FullName))]
         [DependsOn(nameof(NameCard), nameof(NameCardViewModel.Description))]
@@ -44,15 +27,6 @@ namespace ObservableModelExample
 
                 return null;
             }
-        }
-
-        public DependencyGraphManager DependencyGraphManager { get; }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        public void OnPropertyChange([CallerMemberName] string propertyName = null)
-        {
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
