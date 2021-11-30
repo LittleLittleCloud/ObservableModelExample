@@ -47,7 +47,7 @@ namespace ObservableModelTests
             };
 
             vm1.A = "a";
-            await vm1.WaitForDependencyUpdateCompleteAsync();
+            await vm1.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
             observer.Should().Equal("A", "B", "C");
         }
 
@@ -63,7 +63,7 @@ namespace ObservableModelTests
             };
 
             vm.A = "a";
-            await vm.WaitForDependencyUpdateCompleteAsync();
+            await vm.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
             observer.Should().Equal("A", "B", "C");
             vm.C.Should().Be("BaC");
         }
@@ -108,18 +108,18 @@ namespace ObservableModelTests
             };
 
             vm.NestVM = new NestViewModel();
-            await vm.WaitForDependencyUpdateCompleteAsync();
+            await vm.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
 
             observer.Should().Equal("B");
             observer.Clear();
 
             vm.NestVM.NestVM = new NestViewModel();
-            await vm.NestVM.WaitForDependencyUpdateCompleteAsync();
+            await vm.NestVM.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
             observer.Should().Equal("B");
             observer.Clear();
 
             vm.NestVM.NestVM.NestVM = new NestViewModel();
-            await vm.NestVM.NestVM.WaitForDependencyUpdateCompleteAsync();
+            await vm.NestVM.NestVM.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
             observer.Should().Equal("B");
         }
 
@@ -137,20 +137,20 @@ namespace ObservableModelTests
 
             // register vm2 through setter
             vm.NestVM = vm2;
-            await vm.WaitForDependencyUpdateCompleteAsync();
+            await vm.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
 
             observer.Should().Equal("B");
             observer.Clear();
 
             // unregister vm by setting vm.NestVM to null (or another vm)
             vm.NestVM = null;
-            await vm.WaitForDependencyUpdateCompleteAsync();
+            await vm.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
             observer.Should().Equal("B");
             observer.Clear();
 
             // since it's unregistered, updating vm2 won't trigger notification in vm.
             vm2.NestVM = new NestViewModel();
-            await vm2.WaitForDependencyUpdateCompleteAsync();
+            await vm2.DependencyGraphManager.WaitForDependencyUpdateCompleteAsync();
             observer.Should().BeEmpty();
         }
 
@@ -169,7 +169,7 @@ namespace ObservableModelTests
                 set
                 {
                     this.a = value;
-                    this.NotifyPropertyChange();
+                    this.DependencyGraphManager.NotifyPropertyChange();
                 }
             }
 
@@ -196,7 +196,7 @@ namespace ObservableModelTests
                 set
                 {
                     this.a = value;
-                    this.NotifyPropertyChange();
+                    this.DependencyGraphManager.NotifyPropertyChange();
                 }
             }
 
@@ -225,10 +225,10 @@ namespace ObservableModelTests
                 get => this.a;
                 set
                 {
-                    this.a?.UnegisterViewModel(this);
+                    this.a?.DependencyGraphManager.UnregisterViewModel(this);
                     this.a = value;
-                    value?.RegisterViewModel(this);
-                    this.NotifyPropertyChange();
+                    value?.DependencyGraphManager.RegisterViewModel(this);
+                    this.DependencyGraphManager.NotifyPropertyChange();
                 }
             }
 

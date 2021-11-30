@@ -18,7 +18,7 @@ namespace ObservableModelExample.ViewModel
             set
             {
                 this.firstName = value;
-                this.NotifyPropertyChange();
+                this.DependencyGraphManager.NotifyPropertyChange();
             }
         }
 
@@ -28,7 +28,7 @@ namespace ObservableModelExample.ViewModel
             set
             {
                 this.lastName = value;
-                this.NotifyPropertyChange();
+                this.DependencyGraphManager.NotifyPropertyChange();
             }
         }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,20 +9,21 @@ namespace ObservableModelExample.Obseravable
 {
     public class DependencyGraphManager
     {
+        private Task notifyPropertyChangedTask;
         private const string THIS_VM = "this";
-        private Dictionary<string, ObservableModel.NotifyDependencyNodeDelegateAsync> notifyDependencyNodeDelegates;
+        private Dictionary<string, NotifyDependencyNodeDelegateAsync> notifyDependencyNodeDelegates;
 
-        public DependencyGraphManager(ObservableModel vm)
+        public DependencyGraphManager(IObservableModel vm)
         {
-            this.ViewModels = new Dictionary<string, ObservableModel>();
+            this.ViewModels = new Dictionary<string, IObservableModel>();
             this.DependencyGraph = new List<KeyValuePair<string, string>>();
-            this.notifyDependencyNodeDelegates = new Dictionary<string, ObservableModel.NotifyDependencyNodeDelegateAsync>();
+            this.notifyDependencyNodeDelegates = new Dictionary<string, NotifyDependencyNodeDelegateAsync>();
             this.Initialize(vm);
         }
 
-        public Dictionary<string, ObservableModel> ViewModels;
+        public Dictionary<string, IObservableModel> ViewModels;
 
-        public void Initialize(ObservableModel vm)
+        public void Initialize(IObservableModel vm)
         {
             this.ViewModels[THIS_VM] = vm;
 
@@ -63,7 +65,7 @@ namespace ObservableModelExample.Obseravable
                 {
                     if (!this.notifyDependencyNodeDelegates.ContainsKey(method.Name))
                     {
-                        var fun = (ObservableModel.NotifyDependencyNodeDelegateAsync)method.CreateDelegate(typeof(ObservableModel.NotifyDependencyNodeDelegateAsync), vm);
+                        var fun = (NotifyDependencyNodeDelegateAsync)method.CreateDelegate(typeof(NotifyDependencyNodeDelegateAsync), vm);
                         this.notifyDependencyNodeDelegates.Add(method.Name, async () => await fun());
                     }
 
@@ -86,7 +88,7 @@ namespace ObservableModelExample.Obseravable
                 {
                     if (!this.notifyDependencyNodeDelegates.ContainsKey(method.Name))
                     {
-                        var fun = (ObservableModel.NotifyDependencyNodeDelegateAsync)method.CreateDelegate(typeof(ObservableModel.NotifyDependencyNodeDelegateAsync), vm);
+                        var fun = (NotifyDependencyNodeDelegateAsync)method.CreateDelegate(typeof(NotifyDependencyNodeDelegateAsync), vm);
                         this.notifyDependencyNodeDelegates.Add(method.Name, () => fun());
                     }
 
@@ -105,8 +107,24 @@ namespace ObservableModelExample.Obseravable
                 }
             }
         }
-        
-        public void RegisterViewModel<T>(T? vm, string prefix) where T: ObservableModel
+
+        public void NotifyPropertyChange([CallerMemberName] string propertyName = null)
+        {
+            this.notifyPropertyChangedTask = Task.Run(async () =>
+            {
+                await this.TryExecuteNotifyDependencyNodeDelegateAsync(propertyName);
+            });
+        }
+
+        public async Task WaitForDependencyUpdateCompleteAsync()
+        {
+            if (this.notifyPropertyChangedTask != null)
+            {
+                await this.notifyPropertyChangedTask;
+            }
+        }
+
+        public void RegisterViewModel<T>(T? vm, [CallerMemberName]string prefix="") where T: IObservableModel
         {
             if(vm == null)
             {
@@ -156,10 +174,10 @@ namespace ObservableModelExample.Obseravable
             }
         }
 
-        public void UnregisterViewModel<T>(T vm) where T: ObservableModel
+        public void UnregisterViewModel<T>(T vm) where T: IObservableModel
         {
-            var vmKv = this.ViewModels.Where(kv => kv.Value == vm).FirstOrDefault();
-            if(vmKv is KeyValuePair<string, ObservableModel> kv)
+            var vmKv = this.ViewModels.Where(kv => kv.Value.Equals(vm)).FirstOrDefault();
+            if(vmKv is KeyValuePair<string, IObservableModel> kv)
             {
                 var vmId = kv.Key;
                 this.ViewModels.Remove(kv.Key);
@@ -167,7 +185,7 @@ namespace ObservableModelExample.Obseravable
             }
         }
 
-        private string CreateViewModelId<T>() where T : ObservableModel
+        private string CreateViewModelId<T>() where T : IObservableModel
         {
             var index = this.ViewModels.Keys.Where(k => k.Contains(typeof(T).Name)).Count();
             return $"{typeof(T).Name}_{index}";

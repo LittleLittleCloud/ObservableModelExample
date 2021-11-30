@@ -17,10 +17,10 @@ namespace ObservableModelExample
             get => this.nameCard;
             set
             {
-                this.nameCard?.UnegisterViewModel(this);
+                this.nameCard?.DependencyGraphManager.UnregisterViewModel(this);
                 this.nameCard = value;
-                value.RegisterViewModel(this);
-                this.NotifyPropertyChange();
+                value.DependencyGraphManager.RegisterViewModel(this);
+                this.DependencyGraphManager.NotifyPropertyChange();
             }
         }
 
