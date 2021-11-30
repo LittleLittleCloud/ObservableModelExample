@@ -11,8 +11,13 @@ namespace ObservableModelExample.ViewModel
 {
     public partial class NameCardViewModel
     {
+        [AutoNotify]
         private string firstName;
+
+        [AutoNotify]
         private string lastName;
+
+        [AutoNotify]
         private string description;
 
         [DependsOn(nameof(LastName))]

@@ -1,0 +1,68 @@
+﻿﻿<#@ template language="C#" linePragmas="false" visibility = "internal" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Microsoft.CodeAnalysis" #>
+
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using ObservableModelExample.ViewModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using ObservableModel.CodeGenerator;
+using Microsoft.CodeAnalysis;
+
+namespace <#=NameSpace#>
+{
+    public partial class <#=ClassName#>: <#=ObservableDisplayString#>
+    {
+        public <#=ClassName#>()
+        {
+            this.DependencyGraphManager = new DependencyGraphManager(this);
+        }
+
+        public DependencyGraphManager DependencyGraphManager { get; }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        public void OnPropertyChange([CallerMemberName] string propertyName = null)
+        {
+            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+<#foreach(var p in Properties){#>
+        public <#=p.Item1#> <#=p.Item2#>
+        {
+            get => this.<#=p.Item3#>;
+            set
+            {
+                if((this.<#=p.Item3#> as object) is <#=ObservableDisplayString#> _vm)
+                {
+                    _vm.DependencyGraphManager.UnregisterViewModel(this);
+                }
+
+                if((value as object) is <#=ObservableDisplayString#> _value)
+                {
+                    _value.DependencyGraphManager.RegisterViewModel(this);
+                }
+
+                this.<#=p.Item3#> = value;
+                this.DependencyGraphManager.NotifyPropertyChange();
+            }
+        }
+<#}#>
+
+    }
+}
+
+<#+
+public string ObservableDisplayString {get; set;}
+public string NameSpace {get; set;}
+public string ClassName {get; set;}
+// item1: property type
+// item2: property name
+// item3: field name
+// item4: true if field is IObservableModel
+public (ITypeSymbol, string, string)[] Properties {get; set;}
+#>

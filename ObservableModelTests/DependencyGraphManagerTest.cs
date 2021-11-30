@@ -236,7 +236,7 @@ namespace ObservableModelTests
             }
         }
 
-        private class NestViewModel: ObservableModel
+        private class NestViewModel: IObservableModel
         {
             private NestViewModel a;
 
@@ -257,6 +257,15 @@ namespace ObservableModelTests
             public string B
             {
                 get => this.NestVM.NestVM.B + this.NestVM.B + "B";
+            }
+
+            public DependencyGraphManager DependencyGraphManager => throw new NotImplementedException();
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+
+            public void OnPropertyChange([CallerMemberName] string propertyName = null)
+            {
+                throw new NotImplementedException();
             }
         }
     }

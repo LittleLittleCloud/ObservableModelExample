@@ -12,6 +12,7 @@ namespace ObservableModelExample
 {
     public partial class MainWindowViewModel
     {
+        [AutoNotify]
         private NameCardViewModel nameCard;
 
         [DependsOn(nameof(NameCard), nameof(NameCardViewModel.FullName))]

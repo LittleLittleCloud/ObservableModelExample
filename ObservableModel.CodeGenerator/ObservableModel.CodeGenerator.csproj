@@ -12,6 +12,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Update="Templates\ObservableClassTemplate.tt">
+	    <LastGenOutput>ObservableClassTemplate.cs</LastGenOutput>
+	    <Generator>TextTemplatingFilePreprocessor</Generator>
+	  </None>
 	  <None Update="Templates\UpdateTemplate.tt">
 	    <LastGenOutput>UpdateTemplate.cs</LastGenOutput>
 	    <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -39,6 +43,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Update="Templates\ObservableClassTemplate.cs">
+	    <DependentUpon>ObservableClassTemplate.tt</DependentUpon>
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	  </Compile>
 	  <Compile Update="Templates\UpdateTemplate.cs">
 	    <DependentUpon>UpdateTemplate.tt</DependentUpon>
 	    <DesignTime>True</DesignTime>

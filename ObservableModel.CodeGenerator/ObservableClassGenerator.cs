@@ -49,17 +49,17 @@ namespace ObservableModel.CodeGenerator
 
             // get the added attribute, and INotifyPropertyChanged
             INamedTypeSymbol attributeSymbol = context.Compilation.GetTypeByMetadataName("ObservableModel.CodeGenerator.AutoNotifyAttribute");
-            INamedTypeSymbol notifySymbol = context.Compilation.GetTypeByMetadataName("System.ComponentModel.INotifyPropertyChanged");
+            INamedTypeSymbol observableSymbol = context.Compilation.GetTypeByMetadataName("ObservableModel.CodeGenerator.IObservableModel");
 
             // group the fields by class, and generate the source
             foreach (IGrouping<INamedTypeSymbol, IFieldSymbol> group in receiver.Fields.GroupBy(f => f.ContainingType))
             {
-                string classSource = ProcessClass(group.Key, group.ToList(), attributeSymbol, notifySymbol, context);
-               context.AddSource($"{group.Key.Name}_autoNotify.cs", SourceText.From(classSource, Encoding.UTF8));
+                string classSource = ProcessClass(group.Key, group.ToList(), attributeSymbol, observableSymbol, context);
+               context.AddSource($"{group.Key.Name}.generated.cs", SourceText.From(classSource, Encoding.UTF8));
             }
         }
 
-        private string ProcessClass(INamedTypeSymbol classSymbol, List<IFieldSymbol> fields, ISymbol attributeSymbol, ISymbol notifySymbol, GeneratorExecutionContext context)
+        private string ProcessClass(INamedTypeSymbol classSymbol, List<IFieldSymbol> fields, ISymbol attributeSymbol, ISymbol observableSymbol, GeneratorExecutionContext context)
         {
             if (!classSymbol.ContainingSymbol.Equals(classSymbol.ContainingNamespace, SymbolEqualityComparer.Default))
             {
@@ -68,29 +68,47 @@ namespace ObservableModel.CodeGenerator
 
             string namespaceName = classSymbol.ContainingNamespace.ToDisplayString();
 
-            // begin building the generated source
-            StringBuilder source = new StringBuilder($@"
-namespace {namespaceName}
-{{
-    public partial class {classSymbol.Name} : {notifySymbol.ToDisplayString()}
-    {{
-");
-
-            // if the class doesn't implement INotifyPropertyChanged already, add it
-            if (!classSymbol.Interfaces.Contains(notifySymbol))
+            var className = classSymbol.Name;
+            var observableDisplayString = observableSymbol.ToDisplayString();
+            var classDisplayString = new ObservableClassTemplate()
             {
-                source.Append("public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;");
-            }
+                NameSpace = namespaceName,
+                ObservableDisplayString = observableSymbol.ToDisplayString(),
+                ClassName = classSymbol.Name,
+                Properties = fields.Select((f) =>
+                {
+                    var propertyType = f.Type;
+                    var propertyName = this.ChooseName(f.Name);
+                    var fieldName = f.Name;
+                    return (propertyType, propertyName, fieldName);
+                }).ToArray(),
+            };
 
-            // create properties for each field 
-            foreach (IFieldSymbol fieldSymbol in fields)
-            {
-                ProcessField(source, fieldSymbol, attributeSymbol);
-            }
-
-            source.Append("} }");
-            return source.ToString();
+            return classDisplayString.TransformText();
         }
+//            // begin building the generated source
+//            StringBuilder source = new StringBuilder($@"
+//namespace {namespaceName}
+//{{
+//    public partial class {classSymbol.Name} : {observableSymbol.ToDisplayString()}
+//    {{
+//");
+
+//            // if the class doesn't implement INotifyPropertyChanged already, add it
+//            if (!classSymbol.Interfaces.Contains(observableSymbol))
+//            {
+//                source.Append("public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;");
+//            }
+
+//            // create properties for each field 
+//            foreach (IFieldSymbol fieldSymbol in fields)
+//            {
+//                ProcessField(source, fieldSymbol, attributeSymbol);
+//            }
+
+//            source.Append("} }");
+//            return source.ToString();
+//        }
 
         private void ProcessField(StringBuilder source, IFieldSymbol fieldSymbol, ISymbol attributeSymbol)
         {
@@ -145,6 +163,18 @@ public {fieldType} {propertyName}
 
         }
 
+        private string ChooseName(string fieldName)
+        {
+            fieldName = fieldName.TrimStart('_');
+            if (fieldName.Length == 0)
+                return string.Empty;
+
+            if (fieldName.Length == 1)
+                return fieldName.ToUpper();
+
+            return fieldName.Substring(0, 1).ToUpper() + fieldName.Substring(1);
+        }
+
         /// <summary>
         /// Created on demand before each generation pass
         /// </summary>
@@ -165,7 +195,7 @@ public {fieldType} {propertyName}
                     {
                         // Get the symbol being declared by the field, and keep it if its annotated
                         IFieldSymbol fieldSymbol = context.SemanticModel.GetDeclaredSymbol(variable) as IFieldSymbol;
-                        if (fieldSymbol.GetAttributes().Any(ad => ad.AttributeClass.ToDisplayString() == "AutoNotify.AutoNotifyAttribute"))
+                        if (fieldSymbol.GetAttributes().Any(ad => ad.AttributeClass.ToDisplayString() == "ObservableModel.CodeGenerator.AutoNotifyAttribute"))
                         {
                             Fields.Add(fieldSymbol);
                         }
