@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -9,6 +9,61 @@
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.9.0" PrivateAssets="all" />
 		<PackageReference Include="System.CodeDom" Version="5.00" />
 		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.2" PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Templates\UpdateTemplate.tt">
+	    <LastGenOutput>UpdateTemplate.cs</LastGenOutput>
+	    <Generator>TextTemplatingFilePreprocessor</Generator>
+	  </None>
+	  <None Update="Templates\DependsOnTemplate.tt">
+	    <LastGenOutput>DependsOnTemplate.cs</LastGenOutput>
+	    <Generator>TextTemplatingFilePreprocessor</Generator>
+	  </None>
+	  <None Update="Templates\DependencyGraphManagerTemplate.tt">
+	    <LastGenOutput>DependencyGraphManagerTemplate.cs</LastGenOutput>
+	    <Generator>TextTemplatingFilePreprocessor</Generator>
+	  </None>
+	  <None Update="Templates\IObservableTemplate.tt">
+	    <LastGenOutput>IObservableTemplate.cs</LastGenOutput>
+	    <Generator>TextTemplatingFilePreprocessor</Generator>
+	  </None>
+	  <None Update="Templates\AutoNotifyTemplate.tt">
+	    <Generator>TextTemplatingFilePreprocessor</Generator>
+	    <LastGenOutput>AutoNotifyTemplate.cs</LastGenOutput>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="Templates\UpdateTemplate.cs">
+	    <DependentUpon>UpdateTemplate.tt</DependentUpon>
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	  </Compile>
+	  <Compile Update="Templates\DependsOnTemplate.cs">
+	    <DependentUpon>DependsOnTemplate.tt</DependentUpon>
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	  </Compile>
+	  <Compile Update="Templates\AutoNotifyTemplate.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>AutoNotifyTemplate.tt</DependentUpon>
+	  </Compile>
+	  <Compile Update="Templates\DependencyGraphManagerTemplate.cs">
+	    <DependentUpon>DependencyGraphManagerTemplate.tt</DependentUpon>
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	  </Compile>
+	  <Compile Update="Templates\IObservableTemplate.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>IObservableTemplate.tt</DependentUpon>
+	  </Compile>
 	</ItemGroup>
 
 </Project>

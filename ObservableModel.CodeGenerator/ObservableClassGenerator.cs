@@ -1,38 +1,41 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using ObservableModel.CodeGenerator.Templates;
 
 namespace ObservableModel.CodeGenerator
 {
     [Generator]
     public class AutoNotifyGenerator : ISourceGenerator
     {
-        private const string autoNotifyCode = @"
-using System;
-namespace ObservableModel.AutoNotify
-{
-    [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
-    [System.Diagnostics.Conditional(""AutoNotifyGenerator_DEBUG"")]
-    sealed class AutoNotifyAttribute : Attribute
-    {
-        public AutoNotifyAttribute()
-        {
-        }
-        public string PropertyName { get; set; }
-    }
-}
-";
-
+        private string autoNotifyCode = new AutoNotifyTemplate().TransformText();
+        private string iObservableCode = new IObservableTemplate().TransformText();
+        private string dependencyGraphManager = new DependencyGraphManagerTemplate().TransformText();
+        private string dependsOnCode = new DependsOnTemplate().TransformText();
+        private string updateCode = new UpdateTemplate().TransformText();
 
         public void Initialize(GeneratorInitializationContext context)
         {
+            //if (!Debugger.IsAttached)
+            //{
+            //    Debugger.Launch();
+            //}
+
             // Register the attribute source
-            context.RegisterForPostInitialization((i) => i.AddSource("AutoNotifyAttribute", autoNotifyCode));
+            context.RegisterForPostInitialization((i) =>
+                {
+                    i.AddSource("DependsOnAttribute", dependsOnCode);
+                    i.AddSource("UpdateAttribute", updateCode);
+                    i.AddSource("DependencyGraphManager", dependencyGraphManager);
+                    i.AddSource("IObservableModel", iObservableCode);
+                    i.AddSource("AutoNotifyAttribute", autoNotifyCode);
+                });
 
             // Register a syntax receiver that will be created for each generation pass
             context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
@@ -45,7 +48,7 @@ namespace ObservableModel.AutoNotify
                 return;
 
             // get the added attribute, and INotifyPropertyChanged
-            INamedTypeSymbol attributeSymbol = context.Compilation.GetTypeByMetadataName("AutoNotify.AutoNotifyAttribute");
+            INamedTypeSymbol attributeSymbol = context.Compilation.GetTypeByMetadataName("ObservableModel.CodeGenerator.AutoNotifyAttribute");
             INamedTypeSymbol notifySymbol = context.Compilation.GetTypeByMetadataName("System.ComponentModel.INotifyPropertyChanged");
 
             // group the fields by class, and generate the source
