@@ -27,16 +27,9 @@ namespace ObservableModel.CodeGenerator.Templates
         public virtual string TransformText()
         {
             this.Write("﻿");
-            this.Write(@"
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using ObservableModelExample.ViewModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using ObservableModel.CodeGenerator;
-using Microsoft.CodeAnalysis;
-
-namespace ");
+            this.Write("\r\nusing System.ComponentModel;\r\nusing System.Runtime.CompilerServices;\r\nusing Sys" +
+                    "tem.ComponentModel;\r\nusing System.Runtime.CompilerServices;\r\nusing ObservableMod" +
+                    "el.CodeGenerator;\r\nusing Microsoft.CodeAnalysis;\r\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(NameSpace));
             this.Write("\r\n{\r\n    public partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));

@@ -20,9 +20,9 @@ namespace ObservableModelTests
             var manager = vm1.DependencyGraphManager;
 
             manager.DependencyGraph.Count().Should().Be(3);
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.C", "this.A")).Should().BeTrue();
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.A")).Should().BeTrue();
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.C", "this.B")).Should().BeTrue();
+            manager.DependencyGraph.Contains(new KeyValuePair<string, string>("this.C", "this.A")).Should().BeTrue();
+            manager.DependencyGraph.Contains(new KeyValuePair<string, string>("this.B", "this.A")).Should().BeTrue();
+            manager.DependencyGraph.Contains(new KeyValuePair<string, string>("this.C", "this.B")).Should().BeTrue();
         }
 
         [Fact]
@@ -48,25 +48,25 @@ namespace ObservableModelTests
             var manager = vm.DependencyGraphManager;
 
             manager.DependencyGraph.Count().Should().Be(2);
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.B")).Should().BeTrue();
-            manager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.NestVM.B")).Should().BeTrue();
+            manager.DependencyGraph.Contains(new KeyValuePair<string, string>("this.B", "this.NestVM.B")).Should().BeTrue();
+            manager.DependencyGraph.Contains(new KeyValuePair<string, string>("this.B", "this.NestVM.NestVM.B")).Should().BeTrue();
 
             vm.NestVM = new NestViewModel();
             vm.NestVM.DependencyGraphManager.DependencyGraph.Count().Should().Be(4);
-            vm.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.B")).Should().BeTrue();
-            vm.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.NestVM.B")).Should().BeTrue();
-            vm.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.B", "this.B")).Should().BeTrue();
-            vm.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.B", "this.NestVM.B")).Should().BeTrue();
+            vm.NestVM.DependencyGraphManager.DependencyGraph.Contains(new KeyValuePair<string, string>("this.B", "this.NestVM.B")).Should().BeTrue();
+            vm.NestVM.DependencyGraphManager.DependencyGraph.Contains(new KeyValuePair<string, string>("this.B", "this.NestVM.NestVM.B")).Should().BeTrue();
+            vm.NestVM.DependencyGraphManager.DependencyGraph.Contains(new KeyValuePair<string, string>("NestViewModel_0.B", "this.B")).Should().BeTrue();
+            vm.NestVM.DependencyGraphManager.DependencyGraph.Contains(new KeyValuePair<string, string>("NestViewModel_0.B", "this.NestVM.B")).Should().BeTrue();
 
             vm.NestVM.NestVM = new NestViewModel();
             vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Count().Should().Be(6);
 
-            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.B")).Should().BeTrue();
-            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("this.B", "this.NestVM.NestVM.B")).Should().BeTrue();
-            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.B", "this.B")).Should().BeTrue();
-            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.B", "this.NestVM.B")).Should().BeTrue();
-            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.NestViewModel_0.B", "this.B")).Should().BeTrue();
-            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(KeyValuePair.Create("NestViewModel_0.NestViewModel_0.B", "NestViewModel_0.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(new KeyValuePair<string, string>("this.B", "this.NestVM.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(new KeyValuePair<string, string>("this.B", "this.NestVM.NestVM.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(new KeyValuePair<string, string>("NestViewModel_0.B", "this.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(new KeyValuePair<string, string>("NestViewModel_0.B", "this.NestVM.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(new KeyValuePair<string, string>("NestViewModel_0.NestViewModel_0.B", "this.B")).Should().BeTrue();
+            vm.NestVM.NestVM.DependencyGraphManager.DependencyGraph.Contains(new KeyValuePair<string, string>("NestViewModel_0.NestViewModel_0.B", "NestViewModel_0.B")).Should().BeTrue();
         }
 
         [Fact]

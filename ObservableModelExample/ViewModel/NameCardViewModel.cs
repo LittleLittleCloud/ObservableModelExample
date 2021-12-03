@@ -42,6 +42,7 @@ namespace ObservableModelExample.ViewModel
             {
                 this.Description = "pull description...";
                 await Task.Delay(5000);
+                this.FirstName = this.firstName + "a";
                 this.Description = $"{this.FullName} doesn't have any description....";
             }
         }

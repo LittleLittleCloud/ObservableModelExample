@@ -46,7 +46,6 @@ public partial class ViewModel : IObservableModel
 
     // some time consuming task
     [DependOn(nameof(D))]
-    [Update(nameof(E))]
     public async Task TaskE()
     {
         await Task.Delay(5000);

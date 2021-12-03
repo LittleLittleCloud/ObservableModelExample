@@ -51,7 +51,7 @@ namespace ObservableModel.CodeGenerator
                     {
                         var dependencyPaths = (dependency as DependsOnAttribute).Properties;
                         var to = this.CreateDependencyNodeName(THIS_VM, dependencyPaths);
-                        this.DependencyGraph.Add(KeyValuePair.Create(from, to));
+                        this.DependencyGraph.Add(new KeyValuePair<string, string>(from, to));
                     }
                 }
             }
@@ -74,7 +74,7 @@ namespace ObservableModel.CodeGenerator
                     {
                         var dependencyPaths = (dependency as DependsOnAttribute).Properties;
                         var to = this.CreateDependencyNodeName(THIS_VM, dependencyPaths);
-                        this.DependencyGraph.Add(KeyValuePair.Create(from, to));
+                        this.DependencyGraph.Add(new KeyValuePair<string, string>(from, to));
                     }
                 }
 
@@ -91,7 +91,7 @@ namespace ObservableModel.CodeGenerator
                     {
                         var dependencyPath = (update as UpdateAttribute).Property;
                         var to = this.CreateDependencyNodeName(THIS_VM, dependencyPath);
-                        this.DependencyGraph.Add(KeyValuePair.Create(to, from));
+                        this.DependencyGraph.Add(new KeyValuePair<string, string>(to, from));
 
                         // if 'to' is thisVM's property, add notifyDependencyNodeDelegates.
                         if (!this.notifyDependencyNodeDelegates.ContainsKey(dependencyPath))
@@ -166,7 +166,7 @@ namespace ObservableModel.CodeGenerator
                     }
                 }
 
-                this.DependencyGraph.Add(KeyValuePair.Create(updateVMId(kv.Key), updateVMId(kv.Value)));
+                this.DependencyGraph.Add(new KeyValuePair<string, string>(updateVMId(kv.Key), updateVMId(kv.Value)));
             }
         }
 
@@ -290,7 +290,7 @@ namespace ObservableModel.CodeGenerator
 
         private string CreateDependencyNodeName(string vmId, params string[] propertyNames) => $"{vmId}.{string.Join(".", propertyNames)}";
 
-        private string GetViewModelIdFromDependencyPath(string path) => string.Join(".", path.Split(".").SkipLast(1));
+        private string GetViewModelIdFromDependencyPath(string path) => string.Join(".", path.Split('.').Reverse().Skip(1).Reverse());
 
         private string GetDependencyNameFromDependencyPath(string path) => path.Split('.').Last();
     }

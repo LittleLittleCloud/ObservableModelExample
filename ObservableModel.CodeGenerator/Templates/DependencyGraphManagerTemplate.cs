@@ -53,136 +53,137 @@ namespace ObservableModel.CodeGenerator.Templates
                     "           {\r\n                        var dependencyPaths = (dependency as Depen" +
                     "dsOnAttribute).Properties;\r\n                        var to = this.CreateDependen" +
                     "cyNodeName(THIS_VM, dependencyPaths);\r\n                        this.DependencyGr" +
-                    "aph.Add(KeyValuePair.Create(from, to));\r\n                    }\r\n                " +
-                    "}\r\n            }\r\n\r\n            // update handler\r\n            var methods = vm." +
-                    "GetType().GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.B" +
-                    "indingFlags.Instance);\r\n            foreach(var method in methods)\r\n            " +
-                    "{\r\n                var from = this.CreateDependencyNodeName(THIS_VM, method.Name" +
-                    ");\r\n                var dependencies = method.GetCustomAttributes(typeof(Depends" +
-                    "OnAttribute), false);\r\n                if (dependencies.Length > 0)\r\n           " +
-                    "     {\r\n                    if (!this.notifyDependencyNodeDelegates.ContainsKey(" +
-                    "method.Name))\r\n                    {\r\n                        var fun = (NotifyD" +
-                    "ependencyNodeDelegateAsync)method.CreateDelegate(typeof(NotifyDependencyNodeDele" +
-                    "gateAsync), vm);\r\n                        this.notifyDependencyNodeDelegates.Add" +
-                    "(method.Name, async () => await fun());\r\n                    }\r\n\r\n              " +
-                    "      foreach(var dependency in dependencies)\r\n                    {\r\n          " +
-                    "              var dependencyPaths = (dependency as DependsOnAttribute).Propertie" +
-                    "s;\r\n                        var to = this.CreateDependencyNodeName(THIS_VM, depe" +
-                    "ndencyPaths);\r\n                        this.DependencyGraph.Add(KeyValuePair.Cre" +
-                    "ate(from, to));\r\n                    }\r\n                }\r\n\r\n                var" +
-                    " updates = method.GetCustomAttributes(typeof(UpdateAttribute), false);\r\n        " +
-                    "        if (updates.Length > 0)\r\n                {\r\n                    if (!thi" +
-                    "s.notifyDependencyNodeDelegates.ContainsKey(method.Name))\r\n                    {" +
-                    "\r\n                        var fun = (NotifyDependencyNodeDelegateAsync)method.Cr" +
-                    "eateDelegate(typeof(NotifyDependencyNodeDelegateAsync), vm);\r\n                  " +
-                    "      this.notifyDependencyNodeDelegates.Add(method.Name, () => fun());\r\n       " +
-                    "             }\r\n\r\n                    foreach (var update in updates)\r\n         " +
-                    "           {\r\n                        var dependencyPath = (update as UpdateAttr" +
-                    "ibute).Property;\r\n                        var to = this.CreateDependencyNodeName" +
-                    "(THIS_VM, dependencyPath);\r\n                        this.DependencyGraph.Add(Key" +
-                    "ValuePair.Create(to, from));\r\n\r\n                        // if \'to\' is thisVM\'s p" +
-                    "roperty, add notifyDependencyNodeDelegates.\r\n                        if (!this.n" +
-                    "otifyDependencyNodeDelegates.ContainsKey(dependencyPath))\r\n                     " +
-                    "   {\r\n                            this.notifyDependencyNodeDelegates.Add(depende" +
-                    "ncyPath, () => Task.Run(() => vm.OnPropertyChange(dependencyPath)));\r\n          " +
-                    "              }\r\n                    }\r\n                }\r\n            }\r\n      " +
-                    "  }\r\n\r\n        public void NotifyPropertyChange([CallerMemberName] string proper" +
-                    "tyName = null)\r\n        {\r\n            this.notifyPropertyChangedTask = Task.Run" +
-                    "(async () =>\r\n            {\r\n                this.ViewModels[THIS_VM].OnProperty" +
-                    "Change(propertyName);\r\n                await this.TryExecuteNotifyDependencyNode" +
-                    "DelegateAsync(propertyName);\r\n            });\r\n        }\r\n\r\n        public async" +
-                    " Task WaitForDependencyUpdateCompleteAsync()\r\n        {\r\n            if (this.no" +
-                    "tifyPropertyChangedTask != null)\r\n            {\r\n                await this.noti" +
-                    "fyPropertyChangedTask;\r\n            }\r\n        }\r\n\r\n        public void Register" +
-                    "ViewModel<T>(T? vm, [CallerMemberName]string prefix=\"\") where T: IObservableMode" +
-                    "l\r\n        {\r\n            if(vm == null)\r\n            {\r\n                return;" +
-                    "\r\n            }\r\n\r\n            prefix = this.CreateDependencyNodeName(THIS_VM, p" +
-                    "refix);\r\n            var vmId = this.CreateViewModelId<T>();\r\n            this.V" +
-                    "iewModels[vmId] = vm;\r\n            var dependencyNodes = vm.DependencyGraphManag" +
-                    "er.DependencyGraph.Where(kv => kv.Value.StartsWith(prefix));\r\n            IEnume" +
-                    "rable<KeyValuePair<string, string>> subGraph = new List<KeyValuePair<string, str" +
-                    "ing>>();\r\n            foreach(var dependencyNode in dependencyNodes)\r\n          " +
-                    "  {\r\n                vm.DependencyGraphManager.CalculateNodeDependencies(depende" +
-                    "ncyNode.Value, ref subGraph);\r\n            }\r\n\r\n            // register vm in vm" +
-                    ".ViewModels\r\n            foreach(var node in subGraph.SelectMany(kv => new[] {kv" +
-                    ".Key, kv.Value }).Distinct())\r\n            {\r\n                var viewModelId = " +
-                    "this.GetViewModelIdFromDependencyPath(node);\r\n                var newViewModelId" +
-                    " = viewModelId == THIS_VM ? vmId : $\"{vmId}.{viewModelId}\";\r\n                if " +
-                    "(!this.ViewModels.ContainsKey(newViewModelId) && vm.DependencyGraphManager.ViewM" +
-                    "odels.ContainsKey(viewModelId))\r\n                {\r\n                    this.Vie" +
-                    "wModels.Add(newViewModelId, vm.DependencyGraphManager.ViewModels[viewModelId]);\r" +
-                    "\n                }\r\n            }\r\n\r\n            foreach(var kv in subGraph)\r\n  " +
-                    "          {\r\n                string updateVMId(string node)\r\n                {\r\n" +
-                    "                    if (node.Contains(prefix))\r\n                    {\r\n         " +
-                    "               return node.Replace(prefix, THIS_VM);\r\n                    }\r\n   " +
-                    "                 else if(node.Contains(THIS_VM))\r\n                    {\r\n       " +
-                    "                 return node.Replace(THIS_VM, vmId);\r\n                    }\r\n   " +
-                    "                 else\r\n                    {\r\n                        return $\"{" +
-                    "vmId}.{node}\";\r\n                    }\r\n                }\r\n\r\n                this" +
-                    ".DependencyGraph.Add(KeyValuePair.Create(updateVMId(kv.Key), updateVMId(kv.Value" +
-                    ")));\r\n            }\r\n        }\r\n\r\n        public void UnregisterViewModel<T>(T v" +
-                    "m) where T: IObservableModel\r\n        {\r\n            var vmKv = this.ViewModels." +
-                    "Where(kv => kv.Value.Equals(vm)).FirstOrDefault();\r\n            if(vmKv is KeyVa" +
-                    "luePair<string, IObservableModel> kv)\r\n            {\r\n                var vmId =" +
-                    " kv.Key;\r\n                this.ViewModels.Remove(kv.Key);\r\n                this." +
-                    "DependencyGraph.RemoveAll(val => val.Key.StartsWith(vmId) || val.Value.StartsWit" +
-                    "h(vmId));\r\n            }\r\n        }\r\n\r\n        private string CreateViewModelId<" +
-                    "T>() where T : IObservableModel\r\n        {\r\n            var index = this.ViewMod" +
-                    "els.Keys.Where(k => k.Contains(typeof(T).Name)).Count();\r\n            return $\"{" +
-                    "typeof(T).Name}_{index}\";\r\n        }\r\n\r\n        public async Task<bool> TryExecu" +
-                    "teNotifyDependencyNodeDelegateAsync(string node)\r\n        {\r\n            try\r\n  " +
-                    "          {\r\n                var prefix = this.CreateDependencyNodeName(THIS_VM," +
-                    " node);\r\n                var dependencyNodes = this.DependencyGraph.Where(kv => " +
-                    "kv.Value.StartsWith(prefix));\r\n                IEnumerable<KeyValuePair<string, " +
-                    "string>> subGraph = new List<KeyValuePair<string, string>>();\r\n                f" +
-                    "oreach (var dependencyNode in dependencyNodes)\r\n                {\r\n             " +
-                    "       this.CalculateNodeDependencies(dependencyNode.Value, ref subGraph);\r\n    " +
-                    "            }\r\n\r\n                var edges = subGraph.Select(x => new Tuple<stri" +
-                    "ng, string>(x.Value, x.Key)).Distinct().OrderBy(kv => kv.Item1).ToList();\r\n     " +
-                    "           var nodes = subGraph.SelectMany(x => new[] { x.Key, x.Value }).Distin" +
-                    "ct().OrderBy(k => k).ToList();\r\n                var sortedNodes = this.Topologic" +
-                    "alSort(nodes, edges);\r\n                foreach (var sortedNode in sortedNodes)\r\n" +
-                    "                {\r\n                    var vmId = this.GetViewModelIdFromDepende" +
-                    "ncyPath(sortedNode);\r\n                    var dependencyFullPath = this.GetDepen" +
-                    "dencyNameFromDependencyPath(sortedNode);\r\n                    if(this.ViewModels" +
-                    ".ContainsKey(vmId) && this.ViewModels[vmId].DependencyGraphManager.notifyDepende" +
-                    "ncyNodeDelegates.TryGetValue(dependencyFullPath, out var fun))\r\n                " +
-                    "    {\r\n                        await fun();\r\n                    }\r\n            " +
-                    "    }\r\n\r\n                return true;\r\n            }\r\n            catch (Excepti" +
-                    "on)\r\n            {\r\n                return false;\r\n            }\r\n        }\r\n\r\n " +
-                    "       private void CalculateNodeDependencies(string node, ref IEnumerable<KeyVa" +
-                    "luePair<string, string>> graph)\r\n        {\r\n            // BFS\r\n            var " +
-                    "edges = this.DependencyGraph.Where(kv => kv.Value == node).ToList();\r\n          " +
-                    "  \r\n            if(edges.Count() == 0)\r\n            {\r\n                return;\r\n" +
-                    "            }\r\n\r\n            graph = graph.Concat(edges).Distinct();\r\n          " +
-                    "  foreach(var edge in edges)\r\n            {\r\n                this.CalculateNodeD" +
-                    "ependencies(edge.Key, ref graph);\r\n            }\r\n        }\r\n\r\n        private L" +
-                    "ist<T> TopologicalSort<T>(IEnumerable<T> nodes, List<Tuple<T, T>> edges) where T" +
-                    " : IEquatable<T>\r\n        {\r\n            // Empty list that will contain the sor" +
-                    "ted elements\r\n            var L = new List<T>();\r\n\r\n            // Set of all no" +
-                    "des with no incoming edges\r\n            var S = new HashSet<T>(nodes.Where(n => " +
-                    "edges.All(e => e.Item2.Equals(n) == false)));\r\n\r\n            // while S is non-e" +
-                    "mpty do\r\n            while (S.Any())\r\n            {\r\n\r\n                //  remov" +
-                    "e a node n from S\r\n                var n = S.First();\r\n                S.Remove(" +
-                    "n);\r\n\r\n                // add n to tail of L\r\n                L.Add(n);\r\n\r\n     " +
-                    "           // for each node m with an edge e from n to m do\r\n                for" +
-                    "each (var e in edges.Where(e => e.Item1.Equals(n)).ToList())\r\n                {\r" +
-                    "\n                    var m = e.Item2;\r\n\r\n                    // remove edge e fr" +
-                    "om the graph\r\n                    edges.Remove(e);\r\n\r\n                    // if " +
-                    "m has no other incoming edges then\r\n                    if (edges.All(me => me.I" +
-                    "tem2.Equals(m) == false))\r\n                    {\r\n                        // ins" +
-                    "ert m into S\r\n                        S.Add(m);\r\n                    }\r\n        " +
-                    "        }\r\n            }\r\n\r\n            // if graph has edges then\r\n            " +
-                    "if (edges.Any())\r\n            {\r\n                // return error (graph has at l" +
-                    "east one cycle)\r\n                return null;\r\n            }\r\n            else\r\n" +
-                    "            {\r\n                // return L (a topologically sorted order)\r\n     " +
-                    "           return L;\r\n            }\r\n        }\r\n\r\n        public List<KeyValuePa" +
-                    "ir<string, string>> DependencyGraph { get; }\r\n\r\n        private string CreateDep" +
-                    "endencyNodeName(string vmId, params string[] propertyNames) => $\"{vmId}.{string." +
-                    "Join(\".\", propertyNames)}\";\r\n\r\n        private string GetViewModelIdFromDependen" +
-                    "cyPath(string path) => string.Join(\".\", path.Split(\".\").SkipLast(1));\r\n\r\n       " +
-                    " private string GetDependencyNameFromDependencyPath(string path) => path.Split(\'" +
-                    ".\').Last();\r\n    }\r\n}\r\n");
+                    "aph.Add(new KeyValuePair<string, string>(from, to));\r\n                    }\r\n   " +
+                    "             }\r\n            }\r\n\r\n            // update handler\r\n            var " +
+                    "methods = vm.GetType().GetMethods(System.Reflection.BindingFlags.Public | System" +
+                    ".Reflection.BindingFlags.Instance);\r\n            foreach(var method in methods)\r" +
+                    "\n            {\r\n                var from = this.CreateDependencyNodeName(THIS_VM" +
+                    ", method.Name);\r\n                var dependencies = method.GetCustomAttributes(t" +
+                    "ypeof(DependsOnAttribute), false);\r\n                if (dependencies.Length > 0)" +
+                    "\r\n                {\r\n                    if (!this.notifyDependencyNodeDelegates" +
+                    ".ContainsKey(method.Name))\r\n                    {\r\n                        var f" +
+                    "un = (NotifyDependencyNodeDelegateAsync)method.CreateDelegate(typeof(NotifyDepen" +
+                    "dencyNodeDelegateAsync), vm);\r\n                        this.notifyDependencyNode" +
+                    "Delegates.Add(method.Name, async () => await fun());\r\n                    }\r\n\r\n " +
+                    "                   foreach(var dependency in dependencies)\r\n                    " +
+                    "{\r\n                        var dependencyPaths = (dependency as DependsOnAttribu" +
+                    "te).Properties;\r\n                        var to = this.CreateDependencyNodeName(" +
+                    "THIS_VM, dependencyPaths);\r\n                        this.DependencyGraph.Add(new" +
+                    " KeyValuePair<string, string>(from, to));\r\n                    }\r\n              " +
+                    "  }\r\n\r\n                var updates = method.GetCustomAttributes(typeof(UpdateAtt" +
+                    "ribute), false);\r\n                if (updates.Length > 0)\r\n                {\r\n  " +
+                    "                  if (!this.notifyDependencyNodeDelegates.ContainsKey(method.Nam" +
+                    "e))\r\n                    {\r\n                        var fun = (NotifyDependencyN" +
+                    "odeDelegateAsync)method.CreateDelegate(typeof(NotifyDependencyNodeDelegateAsync)" +
+                    ", vm);\r\n                        this.notifyDependencyNodeDelegates.Add(method.Na" +
+                    "me, () => fun());\r\n                    }\r\n\r\n                    foreach (var upd" +
+                    "ate in updates)\r\n                    {\r\n                        var dependencyPa" +
+                    "th = (update as UpdateAttribute).Property;\r\n                        var to = thi" +
+                    "s.CreateDependencyNodeName(THIS_VM, dependencyPath);\r\n                        th" +
+                    "is.DependencyGraph.Add(new KeyValuePair<string, string>(to, from));\r\n\r\n         " +
+                    "               // if \'to\' is thisVM\'s property, add notifyDependencyNodeDelegate" +
+                    "s.\r\n                        if (!this.notifyDependencyNodeDelegates.ContainsKey(" +
+                    "dependencyPath))\r\n                        {\r\n                            this.no" +
+                    "tifyDependencyNodeDelegates.Add(dependencyPath, () => Task.Run(() => vm.OnProper" +
+                    "tyChange(dependencyPath)));\r\n                        }\r\n                    }\r\n " +
+                    "               }\r\n            }\r\n        }\r\n\r\n        public void NotifyProperty" +
+                    "Change([CallerMemberName] string propertyName = null)\r\n        {\r\n            th" +
+                    "is.notifyPropertyChangedTask = Task.Run(async () =>\r\n            {\r\n            " +
+                    "    this.ViewModels[THIS_VM].OnPropertyChange(propertyName);\r\n                aw" +
+                    "ait this.TryExecuteNotifyDependencyNodeDelegateAsync(propertyName);\r\n           " +
+                    " });\r\n        }\r\n\r\n        public async Task WaitForDependencyUpdateCompleteAsyn" +
+                    "c()\r\n        {\r\n            if (this.notifyPropertyChangedTask != null)\r\n       " +
+                    "     {\r\n                await this.notifyPropertyChangedTask;\r\n            }\r\n  " +
+                    "      }\r\n\r\n        public void RegisterViewModel<T>(T? vm, [CallerMemberName]str" +
+                    "ing prefix=\"\") where T: IObservableModel\r\n        {\r\n            if(vm == null)\r" +
+                    "\n            {\r\n                return;\r\n            }\r\n\r\n            prefix = t" +
+                    "his.CreateDependencyNodeName(THIS_VM, prefix);\r\n            var vmId = this.Crea" +
+                    "teViewModelId<T>();\r\n            this.ViewModels[vmId] = vm;\r\n            var de" +
+                    "pendencyNodes = vm.DependencyGraphManager.DependencyGraph.Where(kv => kv.Value.S" +
+                    "tartsWith(prefix));\r\n            IEnumerable<KeyValuePair<string, string>> subGr" +
+                    "aph = new List<KeyValuePair<string, string>>();\r\n            foreach(var depende" +
+                    "ncyNode in dependencyNodes)\r\n            {\r\n                vm.DependencyGraphMa" +
+                    "nager.CalculateNodeDependencies(dependencyNode.Value, ref subGraph);\r\n          " +
+                    "  }\r\n\r\n            // register vm in vm.ViewModels\r\n            foreach(var node" +
+                    " in subGraph.SelectMany(kv => new[] {kv.Key, kv.Value }).Distinct())\r\n          " +
+                    "  {\r\n                var viewModelId = this.GetViewModelIdFromDependencyPath(nod" +
+                    "e);\r\n                var newViewModelId = viewModelId == THIS_VM ? vmId : $\"{vmI" +
+                    "d}.{viewModelId}\";\r\n                if (!this.ViewModels.ContainsKey(newViewMode" +
+                    "lId) && vm.DependencyGraphManager.ViewModels.ContainsKey(viewModelId))\r\n        " +
+                    "        {\r\n                    this.ViewModels.Add(newViewModelId, vm.Dependency" +
+                    "GraphManager.ViewModels[viewModelId]);\r\n                }\r\n            }\r\n\r\n    " +
+                    "        foreach(var kv in subGraph)\r\n            {\r\n                string updat" +
+                    "eVMId(string node)\r\n                {\r\n                    if (node.Contains(pre" +
+                    "fix))\r\n                    {\r\n                        return node.Replace(prefix" +
+                    ", THIS_VM);\r\n                    }\r\n                    else if(node.Contains(TH" +
+                    "IS_VM))\r\n                    {\r\n                        return node.Replace(THIS" +
+                    "_VM, vmId);\r\n                    }\r\n                    else\r\n                  " +
+                    "  {\r\n                        return $\"{vmId}.{node}\";\r\n                    }\r\n  " +
+                    "              }\r\n\r\n                this.DependencyGraph.Add(new KeyValuePair<str" +
+                    "ing, string>(updateVMId(kv.Key), updateVMId(kv.Value)));\r\n            }\r\n       " +
+                    " }\r\n\r\n        public void UnregisterViewModel<T>(T vm) where T: IObservableModel" +
+                    "\r\n        {\r\n            var vmKv = this.ViewModels.Where(kv => kv.Value.Equals(" +
+                    "vm)).FirstOrDefault();\r\n            if(vmKv is KeyValuePair<string, IObservableM" +
+                    "odel> kv)\r\n            {\r\n                var vmId = kv.Key;\r\n                th" +
+                    "is.ViewModels.Remove(kv.Key);\r\n                this.DependencyGraph.RemoveAll(va" +
+                    "l => val.Key.StartsWith(vmId) || val.Value.StartsWith(vmId));\r\n            }\r\n  " +
+                    "      }\r\n\r\n        private string CreateViewModelId<T>() where T : IObservableMo" +
+                    "del\r\n        {\r\n            var index = this.ViewModels.Keys.Where(k => k.Contai" +
+                    "ns(typeof(T).Name)).Count();\r\n            return $\"{typeof(T).Name}_{index}\";\r\n " +
+                    "       }\r\n\r\n        public async Task<bool> TryExecuteNotifyDependencyNodeDelega" +
+                    "teAsync(string node)\r\n        {\r\n            try\r\n            {\r\n               " +
+                    " var prefix = this.CreateDependencyNodeName(THIS_VM, node);\r\n                var" +
+                    " dependencyNodes = this.DependencyGraph.Where(kv => kv.Value.StartsWith(prefix))" +
+                    ";\r\n                IEnumerable<KeyValuePair<string, string>> subGraph = new List" +
+                    "<KeyValuePair<string, string>>();\r\n                foreach (var dependencyNode i" +
+                    "n dependencyNodes)\r\n                {\r\n                    this.CalculateNodeDep" +
+                    "endencies(dependencyNode.Value, ref subGraph);\r\n                }\r\n\r\n           " +
+                    "     var edges = subGraph.Select(x => new Tuple<string, string>(x.Value, x.Key))" +
+                    ".Distinct().OrderBy(kv => kv.Item1).ToList();\r\n                var nodes = subGr" +
+                    "aph.SelectMany(x => new[] { x.Key, x.Value }).Distinct().OrderBy(k => k).ToList(" +
+                    ");\r\n                var sortedNodes = this.TopologicalSort(nodes, edges);\r\n     " +
+                    "           foreach (var sortedNode in sortedNodes)\r\n                {\r\n         " +
+                    "           var vmId = this.GetViewModelIdFromDependencyPath(sortedNode);\r\n      " +
+                    "              var dependencyFullPath = this.GetDependencyNameFromDependencyPath(" +
+                    "sortedNode);\r\n                    if(this.ViewModels.ContainsKey(vmId) && this.V" +
+                    "iewModels[vmId].DependencyGraphManager.notifyDependencyNodeDelegates.TryGetValue" +
+                    "(dependencyFullPath, out var fun))\r\n                    {\r\n                     " +
+                    "   await fun();\r\n                    }\r\n                }\r\n\r\n                ret" +
+                    "urn true;\r\n            }\r\n            catch (Exception)\r\n            {\r\n        " +
+                    "        return false;\r\n            }\r\n        }\r\n\r\n        private void Calculat" +
+                    "eNodeDependencies(string node, ref IEnumerable<KeyValuePair<string, string>> gra" +
+                    "ph)\r\n        {\r\n            // BFS\r\n            var edges = this.DependencyGraph" +
+                    ".Where(kv => kv.Value == node).ToList();\r\n            \r\n            if(edges.Cou" +
+                    "nt() == 0)\r\n            {\r\n                return;\r\n            }\r\n\r\n           " +
+                    " graph = graph.Concat(edges).Distinct();\r\n            foreach(var edge in edges)" +
+                    "\r\n            {\r\n                this.CalculateNodeDependencies(edge.Key, ref gr" +
+                    "aph);\r\n            }\r\n        }\r\n\r\n        private List<T> TopologicalSort<T>(IE" +
+                    "numerable<T> nodes, List<Tuple<T, T>> edges) where T : IEquatable<T>\r\n        {\r" +
+                    "\n            // Empty list that will contain the sorted elements\r\n            va" +
+                    "r L = new List<T>();\r\n\r\n            // Set of all nodes with no incoming edges\r\n" +
+                    "            var S = new HashSet<T>(nodes.Where(n => edges.All(e => e.Item2.Equal" +
+                    "s(n) == false)));\r\n\r\n            // while S is non-empty do\r\n            while (" +
+                    "S.Any())\r\n            {\r\n\r\n                //  remove a node n from S\r\n         " +
+                    "       var n = S.First();\r\n                S.Remove(n);\r\n\r\n                // ad" +
+                    "d n to tail of L\r\n                L.Add(n);\r\n\r\n                // for each node " +
+                    "m with an edge e from n to m do\r\n                foreach (var e in edges.Where(e" +
+                    " => e.Item1.Equals(n)).ToList())\r\n                {\r\n                    var m =" +
+                    " e.Item2;\r\n\r\n                    // remove edge e from the graph\r\n              " +
+                    "      edges.Remove(e);\r\n\r\n                    // if m has no other incoming edge" +
+                    "s then\r\n                    if (edges.All(me => me.Item2.Equals(m) == false))\r\n " +
+                    "                   {\r\n                        // insert m into S\r\n              " +
+                    "          S.Add(m);\r\n                    }\r\n                }\r\n            }\r\n\r\n" +
+                    "            // if graph has edges then\r\n            if (edges.Any())\r\n          " +
+                    "  {\r\n                // return error (graph has at least one cycle)\r\n           " +
+                    "     return null;\r\n            }\r\n            else\r\n            {\r\n             " +
+                    "   // return L (a topologically sorted order)\r\n                return L;\r\n      " +
+                    "      }\r\n        }\r\n\r\n        public List<KeyValuePair<string, string>> Dependen" +
+                    "cyGraph { get; }\r\n\r\n        private string CreateDependencyNodeName(string vmId," +
+                    " params string[] propertyNames) => $\"{vmId}.{string.Join(\".\", propertyNames)}\";\r" +
+                    "\n\r\n        private string GetViewModelIdFromDependencyPath(string path) => strin" +
+                    "g.Join(\".\", path.Split(\'.\').Reverse().Skip(1).Reverse());\r\n\r\n        private str" +
+                    "ing GetDependencyNameFromDependencyPath(string path) => path.Split(\'.\').Last();\r" +
+                    "\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
